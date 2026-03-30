@@ -92,6 +92,10 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@utility h-safe-top {
+  height: env(safe-area-inset-top, 0px);
+}
+
 :root {
     --background: #f8fafc;
     --foreground: #171717;

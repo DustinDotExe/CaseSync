@@ -241,18 +241,23 @@ export default function App() {
   );
 
   if (loading) return (
-    <div className="h-screen w-screen flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-      <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-blue-200 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
-        <div className="text-slate-400 dark:text-slate-500 font-medium animate-pulse">Initializing CaseSync...</div>
+    <div className="h-screen w-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0"></div>
+      <div className="flex-1 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 border-4 border-blue-200 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="text-slate-400 dark:text-slate-500 font-medium animate-pulse">Initializing CaseSync...</div>
+        </div>
       </div>
     </div>
   );
 
   if (!user) return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-4">
-      <div className="max-w-md w-full bg-white dark:bg-slate-800 p-10 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
-        <div className="flex items-center gap-3 mb-8 justify-center">
+    <div className="h-screen w-screen flex flex-col bg-slate-50 dark:bg-slate-950">
+      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0"></div>
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white dark:bg-slate-800 p-10 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
             <Scale className="w-7 h-7 text-white" />
           </div>
@@ -272,6 +277,7 @@ export default function App() {
         </p>
       </div>
     </div>
+  </div>
   );
 
   return (
