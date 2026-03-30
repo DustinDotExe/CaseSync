@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - displayName: string (optional)
+    //   - role: string (required, 'case_manager' or 'admin')
+    //
+    // Collection: participants
+    // Document ID: participantId
+    // Fields:
+    //   - name: string (required)
+    //   - caseNumber: string (required)
+    //   - currentPhase: integer (required, 1-5)
+    //   - goals: list (optional, strings)
+    //   - completedGoals: list (optional, strings)
+    //   - notes: string (optional)
+    //   - milestones: map (required)
+    //   - uid: string (required, owner)
+    //   - createdAt: timestamp (required)
+    //   - updatedAt: timestamp (required)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.uid;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email']) &&
+             data.uid == request.auth.uid &&
+             isValidEmail(data.email) &&
+             (data.role == 'case_manager' || data.role == 'admin');
+    }
+
+    function isValidParticipant(data) {
+      return data.keys().hasAll(['name', 'caseNumber', 'currentPhase', 'uid']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.caseNumber is string && data.caseNumber.size() > 0 &&
+             data.currentPhase is int && data.currentPhase >= 1 && data.currentPhase <= 5 &&
+             data.uid == request.auth.uid;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == resource.data.role;
+    }
+
+    match /participants/{participantId} {
+      allow read: if isDocOwner();
+      allow create: if isAuthenticated() && isValidParticipant(request.resource.data);
+      allow update: if isDocOwner() && isValidParticipant(request.resource.data);
+      allow delete: if isDocOwner();
+    }
+  }
+}
