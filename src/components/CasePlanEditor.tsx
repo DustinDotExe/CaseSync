@@ -10,7 +10,7 @@ import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Save, Mic, Sparkles, Loader2, MicOff } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
+import { refineNotesStream } from '../services/geminiService';
 
 const IRAS_DOMAINS = [
   "Criminal History",
@@ -116,22 +116,11 @@ export default function CasePlanEditor({ participant }: { participant: Participa
     if (!notes.trim()) return;
     setIsRefining(true);
     try {
-      const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const model = "gemini-3-flash-preview";
-      const response = await genAI.models.generateContent({
-        model,
-        contents: `Refine the following case notes for a court participant. 
-        
-        RULE: Rewrite these case notes into clear, professional plain language. The goal is a formal record that is easily understood by the defendant.
-        ${notes}`,
-        config: {
-          systemInstruction: "You are an expert court case manager. Your task is to refine case note information. Rewrite these case notes into clear, professional plain language. The goal is a formal record that is easily understood by the defendant. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts."
-        }
-      });
-      
-      const refinedText = response.text;
-      if (refinedText) {
-        setNotes(refinedText);
+      const stream = refineNotesStream(notes);
+      let fullText = '';
+      for await (const chunk of stream) {
+        fullText += chunk;
+        setNotes(fullText);
       }
     } catch (err) {
       console.error("AI Refinement Error:", err);
