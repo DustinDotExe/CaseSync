@@ -119,30 +119,30 @@ export default function CourtReport({ participant }: { participant: Participant 
       <div ref={reportRef} data-report-container className="print:m-0 print:p-0">
         <Card className={`bg-white dark:bg-slate-900 max-w-5xl mx-auto overflow-visible print:max-w-[8.5in] print:shadow-none print:border-none ${exporting ? 'shadow-none border-none' : 'shadow-lg border-slate-200 dark:border-slate-800'}`}>
         <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 bg-white dark:bg-slate-900">
-          <div className="flex justify-between items-start">
+          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
             <div className="space-y-1">
-              <h2 className="text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{participant.name} / Case Plan</h2>
+              <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{participant.name} / Case Plan</h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Created on {new Date().toLocaleDateString()}</p>
             </div>
-            <div className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-xl flex items-center gap-2">
+            <div className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-lg md:text-xl flex items-center gap-2">
               <Scale className="w-5 h-5" />
               CaseSync
             </div>
           </div>
         </CardHeader>
         
-        <CardContent className="px-10 py-1 space-y-4">
+        <CardContent className="px-6 md:px-10 py-1 space-y-4">
           {/* Participant Info */}
-          <section className="grid grid-cols-3 gap-4 py-2 items-center">
-            <div className="text-center">
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-2 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+            <div className="text-center py-2 sm:py-0">
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Participant</p>
               <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.name}</p>
             </div>
-            <div className="text-center border-x border-slate-100 dark:border-slate-800">
+            <div className="text-center py-2 sm:py-0">
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Current Phase</p>
               <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.currentPhase}</p>
             </div>
-            <div className="text-center">
+            <div className="text-center py-2 sm:py-0">
               <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Case Number</p>
               <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.caseNumber}</p>
             </div>
@@ -234,14 +234,14 @@ export default function CourtReport({ participant }: { participant: Participant 
 
           {/* Footer */}
           <div className="pt-12 border-t border-slate-100 dark:border-slate-800 mt-12">
-            <div className="flex justify-between items-end mb-8">
-              <div className="space-y-1">
-                <div className="w-48 border-b border-slate-400 dark:border-slate-600 h-8"></div>
+            <div className="flex flex-col sm:flex-row justify-between items-end gap-8 mb-8">
+              <div className="space-y-1 w-full sm:w-auto">
+                <div className="w-full sm:w-48 border-b border-slate-400 dark:border-slate-600 h-8"></div>
                 <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Case Manager Signature</p>
               </div>
-              <div className="space-y-1">
-                <div className="w-48 border-b border-slate-400 dark:border-slate-600 h-8"></div>
-                <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider text-right">Participant Signature</p>
+              <div className="space-y-1 w-full sm:w-auto">
+                <div className="w-full sm:w-48 border-b border-slate-400 dark:border-slate-600 h-8"></div>
+                <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider text-left sm:text-right">Participant Signature</p>
               </div>
             </div>
             <div className="text-center pt-4 border-t border-slate-50 dark:border-slate-900">
@@ -254,11 +254,11 @@ export default function CourtReport({ participant }: { participant: Participant 
 
       </div>
 
-      <div className="flex justify-end gap-3 no-print mt-8 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row justify-end gap-3 no-print mt-8 max-w-5xl mx-auto">
         <Button 
           variant="outline" 
           onClick={handlePrint} 
-          className="border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-200 font-semibold shadow-sm transition-all active:scale-[0.98]"
+          className="w-full sm:w-auto border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-200 font-semibold shadow-sm transition-all active:scale-[0.98]"
         >
           <Printer className="w-4 h-4 mr-2" />
           Print Report
@@ -266,7 +266,7 @@ export default function CourtReport({ participant }: { participant: Participant 
         <Button 
           onClick={handleExportPDF} 
           disabled={exporting}
-          className="bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-semibold shadow-md transition-all active:scale-[0.98] min-w-[140px]"
+          className="w-full sm:w-auto bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-700 text-white font-semibold shadow-md transition-all active:scale-[0.98] min-w-[140px]"
         >
           {exporting ? (
             <Loader2 className="w-4 h-4 mr-2 animate-spin" />

@@ -249,12 +249,12 @@ export default function CasePlanEditor({ participant }: { participant: Participa
       </Card>
 
       <Card className="md:col-span-2 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Case Manager Observations</CardTitle>
             <CardDescription className="text-slate-500 dark:text-slate-400">Detailed observations and progress logs.</CardDescription>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 w-full sm:w-auto">
             <Button 
               size="sm" 
               variant="outline" 
