@@ -11,7 +11,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { LogOut, Plus, User, FileText, Scale, Search, Filter, LayoutDashboard, Target, Trash2, Moon, Sun } from 'lucide-react';
+import { LogOut, Plus, User, FileText, Scale, Search, Filter, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash } from 'lucide-react';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetTrigger,
+  SheetHeader,
+  SheetTitle
+} from './components/ui/sheet';
 import { Participant } from './types';
 import CasePlanEditor from './components/CasePlanEditor';
 import AIGoalRefiner from './components/AIGoalRefiner';
@@ -121,6 +128,112 @@ export default function App() {
     p.caseNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const SidebarContent = () => (
+    <div className="flex flex-col h-full">
+      <div className="p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider text-xs">Participants</h2>
+          <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full">
+            <Plus className="w-5 h-5" />
+          </Button>
+        </div>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+          <Input 
+            placeholder="Search by name or case..." 
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-blue-500 h-10 rounded-xl"
+          />
+        </div>
+      </div>
+      
+      <ScrollArea className="flex-1 px-4 pb-6">
+        <div className="space-y-2">
+          {isAdding && (
+            <Card className="mb-4 border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
+              <CardContent className="p-4">
+                <form onSubmit={handleAddParticipant} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="name" className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-black tracking-widest">Full Name</Label>
+                    <Input 
+                      id="name" 
+                      value={newParticipant.name} 
+                      onChange={e => setNewParticipant(prev => ({ ...prev, name: e.target.value }))}
+                      className="h-9 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                      placeholder="e.g. John Smith"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="case" className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-black tracking-widest">Case Number</Label>
+                    <Input 
+                      id="case" 
+                      value={newParticipant.caseNumber} 
+                      onChange={e => setNewParticipant(prev => ({ ...prev, caseNumber: e.target.value }))}
+                      className="h-9 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 font-mono"
+                      placeholder="2024-CR-0000"
+                    />
+                  </div>
+                  <div className="flex gap-2 pt-2">
+                    <Button type="submit" size="sm" className="flex-1 bg-blue-600 dark:bg-blue-500 text-white font-bold">Create Profile</Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setIsAdding(false)} className="font-bold text-slate-500 dark:text-slate-400">Cancel</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          )}
+
+          {filteredParticipants.length === 0 && !isAdding && (
+            <div className="text-center py-20 px-6">
+              <div className="bg-slate-50 dark:bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Search className="w-6 h-6 text-slate-200 dark:text-slate-700" />
+              </div>
+              <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">No participants found.</p>
+            </div>
+          )}
+
+          {filteredParticipants.map(p => (
+            <button
+              key={p.id}
+              onClick={() => setSelectedParticipant(p)}
+              className={cn(
+                "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative overflow-hidden border",
+                selectedParticipant?.id === p.id 
+                  ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 translate-x-1" 
+                  : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+              )}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <span className={cn(
+                  "font-bold text-sm leading-tight",
+                  selectedParticipant?.id === p.id ? "text-white" : "text-slate-800 dark:text-slate-200"
+                )}>{p.name}</span>
+                <Badge className={cn(
+                  "text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter",
+                  selectedParticipant?.id === p.id 
+                    ? "bg-white/20 text-white border-white/20" 
+                    : "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50"
+                )}>
+                  P{p.currentPhase}
+                </Badge>
+              </div>
+              <div className={cn(
+                "text-[10px] font-mono tracking-tight",
+                selectedParticipant?.id === p.id ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
+              )}>{p.caseNumber}</div>
+              
+              {selectedParticipant?.id === p.id && (
+                <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/40"></div>
+              )}
+            </button>
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+
   if (loading) return (
     <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
       <div className="flex flex-col items-center gap-4">
@@ -158,16 +271,31 @@ export default function App() {
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300">
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-4 flex items-center justify-between z-20 shadow-sm">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between z-20 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-600 p-2 rounded-lg shadow-md shadow-blue-100 dark:shadow-blue-900/20">
+          <Sheet>
+            <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden text-slate-500" />}>
+              <Menu className="w-5 h-5" />
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
+              <SheetHeader className="p-6 border-b border-slate-100 dark:border-slate-800">
+                <SheetTitle className="flex items-center gap-2">
+                  <Scale className="w-5 h-5 text-blue-600" />
+                  <span className="font-black tracking-tight">CaseSync</span>
+                </SheetTitle>
+              </SheetHeader>
+              <SidebarContent />
+            </SheetContent>
+          </Sheet>
+
+          <div className="bg-blue-600 p-2 rounded-lg shadow-md shadow-blue-100 dark:shadow-blue-900/20 hidden md:block">
             <Scale className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 dark:text-white tracking-tight">CaseSync</h1>
-          <Badge variant="outline" className="ml-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 font-mono text-[10px]">v1.0.0</Badge>
+          <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CaseSync</h1>
+          <Badge variant="outline" className="hidden sm:inline-flex ml-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 font-mono text-[10px]">v1.0.0</Badge>
         </div>
         
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-2 md:gap-6">
           <Button
             variant="ghost"
             size="icon"
@@ -183,122 +311,22 @@ export default function App() {
           </div>
           <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
+            <LogOut className="w-4 h-4 md:mr-2" />
+            <span className="hidden md:inline">Sign Out</span>
           </Button>
         </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Sidebar */}
-        <aside className="w-85 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col shadow-sm z-10">
-          <div className="p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider text-xs">Participants</h2>
-              <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full">
-                <Plus className="w-5 h-5" />
-              </Button>
-            </div>
-            
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-              <Input 
-                placeholder="Search by name or case..." 
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-blue-500 h-10 rounded-xl"
-              />
-            </div>
-          </div>
-          
-          <ScrollArea className="flex-1 px-4 pb-6">
-            <div className="space-y-2">
-              {isAdding && (
-                <Card className="mb-4 border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
-                  <CardContent className="p-4">
-                    <form onSubmit={handleAddParticipant} className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="name" className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-black tracking-widest">Full Name</Label>
-                        <Input 
-                          id="name" 
-                          value={newParticipant.name} 
-                          onChange={e => setNewParticipant(prev => ({ ...prev, name: e.target.value }))}
-                          className="h-9 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
-                          placeholder="e.g. John Smith"
-                          autoFocus
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="case" className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-black tracking-widest">Case Number</Label>
-                        <Input 
-                          id="case" 
-                          value={newParticipant.caseNumber} 
-                          onChange={e => setNewParticipant(prev => ({ ...prev, caseNumber: e.target.value }))}
-                          className="h-9 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 font-mono"
-                          placeholder="2024-CR-0000"
-                        />
-                      </div>
-                      <div className="flex gap-2 pt-2">
-                        <Button type="submit" size="sm" className="flex-1 bg-blue-600 dark:bg-blue-500 text-white font-bold">Create Profile</Button>
-                        <Button type="button" size="sm" variant="ghost" onClick={() => setIsAdding(false)} className="font-bold text-slate-500 dark:text-slate-400">Cancel</Button>
-                      </div>
-                    </form>
-                  </CardContent>
-                </Card>
-              )}
-
-              {filteredParticipants.length === 0 && !isAdding && (
-                <div className="text-center py-20 px-6">
-                  <div className="bg-slate-50 dark:bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search className="w-6 h-6 text-slate-200 dark:text-slate-700" />
-                  </div>
-                  <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">No participants found.</p>
-                </div>
-              )}
-
-              {filteredParticipants.map(p => (
-                <button
-                  key={p.id}
-                  onClick={() => setSelectedParticipant(p)}
-                  className={cn(
-                    "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative overflow-hidden border",
-                    selectedParticipant?.id === p.id 
-                      ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 translate-x-1" 
-                      : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
-                  )}
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={cn(
-                      "font-bold text-sm leading-tight",
-                      selectedParticipant?.id === p.id ? "text-white" : "text-slate-800 dark:text-slate-200"
-                    )}>{p.name}</span>
-                    <Badge className={cn(
-                      "text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter",
-                      selectedParticipant?.id === p.id 
-                        ? "bg-white/20 text-white border-white/20" 
-                        : "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50"
-                    )}>
-                      P{p.currentPhase}
-                    </Badge>
-                  </div>
-                  <div className={cn(
-                    "text-[10px] font-mono tracking-tight",
-                    selectedParticipant?.id === p.id ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
-                  )}>{p.caseNumber}</div>
-                  
-                  {selectedParticipant?.id === p.id && (
-                    <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/40"></div>
-                  )}
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
+        {/* Sidebar (Desktop) */}
+        <aside className="hidden md:flex w-85 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm z-10">
+          <SidebarContent />
         </aside>
 
         {/* Main Content */}
         <section className="flex-1 bg-slate-50 dark:bg-slate-950 overflow-y-auto custom-scrollbar transition-colors duration-300">
           {selectedParticipant ? (
-            <div className="max-w-5xl mx-auto p-10 space-y-10 animate-in fade-in duration-500">
+            <div className="max-w-5xl mx-auto p-4 md:p-10 space-y-6 md:space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
@@ -346,17 +374,17 @@ export default function App() {
 
               <Tabs defaultValue="plan" className="w-full">
                 <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 h-14 rounded-2xl shadow-sm inline-flex w-auto">
-                  <TabsTrigger value="plan" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-8 rounded-xl font-bold transition-all">
-                    <LayoutDashboard className="w-4 h-4 mr-2" />
-                    Overview
+                  <TabsTrigger value="plan" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <LayoutDashboard className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">Overview</span>
                   </TabsTrigger>
-                  <TabsTrigger value="ai" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-8 rounded-xl font-bold transition-all">
-                    <Target className="w-4 h-4 mr-2" />
-                    Goals
+                  <TabsTrigger value="ai" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <Target className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">Goals</span>
                   </TabsTrigger>
-                  <TabsTrigger value="report" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-8 rounded-xl font-bold transition-all">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Case Plan
+                  <TabsTrigger value="report" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <FileText className="w-4 h-4 md:mr-2" />
+                    <span className="hidden md:inline">Case Plan</span>
                   </TabsTrigger>
                 </TabsList>
 
@@ -427,11 +455,5 @@ export default function App() {
         </div>
       )}
     </div>
-  );
-}
-
-function Hash({ className }: { className?: string }) {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" y1="9" x2="20" y2="9"></line><line x1="4" y1="15" x2="20" y2="15"></line><line x1="10" y1="3" x2="8" y2="21"></line><line x1="16" y1="3" x2="14" y2="21"></line></svg>
   );
 }
