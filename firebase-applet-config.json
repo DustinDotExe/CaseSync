@@ -1,0 +1,10 @@
+{
+  "projectId": "ai-studio-applet-webapp-db5ca",
+  "appId": "VITE_FIREBASE_APP_ID_REMOVED",
+  "apiKey": "VITE_FIREBASE_API_KEY_REMOVED",
+  "authDomain": "ai-studio-applet-webapp-db5ca.firebaseapp.com",
+  "firestoreDatabaseId": "VITE_FIREBASE_FIRESTORE_DATABASE_ID_REMOVED",
+  "storageBucket": "ai-studio-applet-webapp-db5ca.firebasestorage.app",
+  "messagingSenderId": "255380395379",
+  "measurementId": ""
+}
