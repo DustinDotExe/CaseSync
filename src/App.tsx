@@ -167,7 +167,7 @@ export default function App() {
                       id="name" 
                       value={newParticipant.name} 
                       onChange={e => setNewParticipant(prev => ({ ...prev, name: e.target.value }))}
-                      className="h-9 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                      className="h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
                       placeholder="e.g. John Smith"
                       autoFocus
                     />
@@ -178,7 +178,7 @@ export default function App() {
                       id="case" 
                       value={newParticipant.caseNumber} 
                       onChange={e => setNewParticipant(prev => ({ ...prev, caseNumber: e.target.value }))}
-                      className="h-9 text-sm bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 font-mono"
+                      className="h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 font-mono"
                       placeholder="2024-CR-0000"
                     />
                   </div>
