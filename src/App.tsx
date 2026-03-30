@@ -46,7 +46,10 @@ export default function App() {
     const headerColorLight = '#ffffff';
     const headerColorDark = '#0f172a'; // Slate 900
 
-    if (isDark) {
+    // Force light mode for the sign-in section
+    const shouldBeDark = user ? isDark : false;
+
+    if (shouldBeDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
       // Update theme-color meta tag
@@ -67,7 +70,7 @@ export default function App() {
       if (appleMeta) appleMeta.setAttribute('content', 'default');
       document.body.style.backgroundColor = headerColorLight;
     }
-  }, [isDark]);
+  }, [isDark, user]);
 
   useEffect(() => {
     if (user) {
@@ -166,8 +169,8 @@ export default function App() {
         </div>
       </div>
       
-      <ScrollArea className="flex-1 px-4 pb-6">
-        <div className="space-y-2">
+      <ScrollArea className="flex-1 pb-6">
+        <div className="space-y-2 px-4">
           {isAdding && (
             <Card className="mb-4 border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
               <CardContent className="p-4">
@@ -216,9 +219,9 @@ export default function App() {
               key={p.id}
               onClick={() => setSelectedParticipant(p)}
               className={cn(
-                "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative overflow-hidden border",
+                "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative border",
                 selectedParticipant?.id === p.id 
-                  ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20 translate-x-1" 
+                  ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20" 
                   : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
               )}
             >
@@ -240,10 +243,6 @@ export default function App() {
                 "text-[10px] font-mono tracking-tight",
                 selectedParticipant?.id === p.id ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
               )}>{p.caseNumber}</div>
-              
-              {selectedParticipant?.id === p.id && (
-                <div className="absolute right-0 top-0 bottom-0 w-1 bg-white/40"></div>
-              )}
             </button>
           ))}
         </div>
@@ -252,22 +251,22 @@ export default function App() {
   );
 
   if (loading) return (
-    <div className="h-screen w-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0"></div>
+    <div className="h-screen w-screen flex flex-col bg-slate-50">
+      <div className="h-safe-top bg-white w-full shrink-0"></div>
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-200 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
-          <div className="text-slate-400 dark:text-slate-500 font-medium animate-pulse">Initializing CaseSync...</div>
+          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="text-slate-400 font-medium animate-pulse">Initializing CaseSync...</div>
         </div>
       </div>
     </div>
   );
 
   if (!user) return (
-    <div className="h-screen w-screen flex flex-col bg-slate-50 dark:bg-slate-950">
-      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0"></div>
+    <div className="h-screen w-screen flex flex-col bg-slate-50">
+      <div className="h-safe-top bg-white w-full shrink-0"></div>
       <div className="flex-1 flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white dark:bg-slate-800 p-10 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
+        <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-slate-200">
           <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
             <Scale className="w-7 h-7 text-white" />
@@ -343,7 +342,7 @@ export default function App() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar (Desktop) */}
-        <aside className="hidden md:flex w-85 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm z-10">
+        <aside className="hidden md:flex w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm z-10">
           {renderSidebarContent()}
         </aside>
 
