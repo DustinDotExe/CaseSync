@@ -48,13 +48,13 @@ export default function App() {
       localStorage.setItem('theme', 'dark');
       // Update theme-color meta tag
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', '#020617');
+      if (meta) meta.setAttribute('content', '#0f172a');
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       // Update theme-color meta tag
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', '#f8fafc');
+      if (meta) meta.setAttribute('content', '#ffffff');
     }
   }, [isDark]);
 
@@ -241,17 +241,17 @@ export default function App() {
   );
 
   if (loading) return (
-    <div className="h-screen w-screen flex items-center justify-center bg-slate-50">
+    <div className="h-screen w-screen flex items-center justify-center bg-white dark:bg-slate-900">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-        <div className="text-slate-400 font-medium animate-pulse">Initializing CaseSync...</div>
+        <div className="w-12 h-12 border-4 border-blue-200 dark:border-slate-800 border-t-blue-600 rounded-full animate-spin"></div>
+        <div className="text-slate-400 dark:text-slate-500 font-medium animate-pulse">Initializing CaseSync...</div>
       </div>
     </div>
   );
 
   if (!user) return (
-    <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-50 p-4">
-      <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-slate-200">
+    <div className="h-screen w-screen flex flex-col items-center justify-center bg-white dark:bg-slate-900 p-4">
+      <div className="max-w-md w-full bg-white dark:bg-slate-800 p-10 rounded-3xl shadow-xl border border-slate-200 dark:border-slate-700">
         <div className="flex items-center gap-3 mb-8 justify-center">
           <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
             <Scale className="w-7 h-7 text-white" />
@@ -275,7 +275,7 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300">
+    <div className="h-screen bg-white dark:bg-slate-900 flex flex-col overflow-hidden transition-colors duration-300">
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between z-20 shadow-sm">
         <div className="flex items-center gap-3">
@@ -330,7 +330,7 @@ export default function App() {
         </aside>
 
         {/* Main Content */}
-        <section className="flex-1 bg-slate-50 dark:bg-slate-950 overflow-y-auto custom-scrollbar transition-colors duration-300">
+        <section className="flex-1 bg-white dark:bg-slate-900 overflow-y-auto custom-scrollbar transition-colors duration-300">
           {selectedParticipant ? (
             <div className="max-w-5xl mx-auto p-4 md:p-10 space-y-6 md:space-y-10 animate-in fade-in duration-500">
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
