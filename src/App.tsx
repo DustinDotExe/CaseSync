@@ -134,7 +134,7 @@ export default function App() {
     p.caseNumber.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const SidebarContent = () => (
+  const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
@@ -290,7 +290,7 @@ export default function App() {
                   <span className="font-black tracking-tight">CaseSync</span>
                 </SheetTitle>
               </SheetHeader>
-              <SidebarContent />
+              {renderSidebarContent()}
             </SheetContent>
           </Sheet>
 
@@ -326,7 +326,7 @@ export default function App() {
       <div className="flex-1 flex overflow-hidden">
         {/* Sidebar (Desktop) */}
         <aside className="hidden md:flex w-85 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm z-10">
-          <SidebarContent />
+          {renderSidebarContent()}
         </aside>
 
         {/* Main Content */}
