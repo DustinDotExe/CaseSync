@@ -103,7 +103,7 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
                 <Textarea 
                   value={refinedGoal}
                   onChange={(e) => setRefinedGoal(e.target.value)}
-                  className="text-sm text-slate-700 dark:text-slate-300 italic bg-white dark:bg-slate-900 border-blue-100 dark:border-blue-900/50 focus-visible:ring-blue-500 min-h-[100px]"
+                  className="text-slate-700 dark:text-slate-300 italic bg-white dark:bg-slate-900 border-blue-100 dark:border-blue-900/50 focus-visible:ring-blue-500 min-h-[100px]"
                 />
                 <Button 
                   size="sm" 
