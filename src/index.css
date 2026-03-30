@@ -92,12 +92,16 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@utility pt-safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
 @utility h-safe-top {
   height: env(safe-area-inset-top, 0px);
 }
 
 :root {
-    --background: #f8fafc;
+    --background: #ffffff;
     --foreground: #171717;
     --card: #ffffff;
     --card-foreground: #171717;
@@ -132,7 +136,7 @@
 }
 
 .dark {
-    --background: #020617;
+    --background: #0f172a;
     --foreground: #fafafa;
     --card: #262626;
     --card-foreground: #fafafa;

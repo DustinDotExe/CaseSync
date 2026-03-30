@@ -43,18 +43,29 @@ export default function App() {
   });
 
   useEffect(() => {
+    const headerColorLight = '#ffffff';
+    const headerColorDark = '#0f172a'; // Slate 900
+
     if (isDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
       // Update theme-color meta tag
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', '#0f172a');
+      if (meta) meta.setAttribute('content', headerColorDark);
+      // Update apple-mobile-web-app-status-bar-style
+      const appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (appleMeta) appleMeta.setAttribute('content', 'black-translucent');
+      document.body.style.backgroundColor = headerColorDark;
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
       // Update theme-color meta tag
       const meta = document.querySelector('meta[name="theme-color"]');
-      if (meta) meta.setAttribute('content', '#ffffff');
+      if (meta) meta.setAttribute('content', headerColorLight);
+      // Update apple-mobile-web-app-status-bar-style
+      const appleMeta = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+      if (appleMeta) appleMeta.setAttribute('content', 'default');
+      document.body.style.backgroundColor = headerColorLight;
     }
   }, [isDark]);
 
@@ -282,6 +293,7 @@ export default function App() {
 
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300">
+      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0"></div>
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between z-20 shadow-sm">
         <div className="flex items-center gap-3">
