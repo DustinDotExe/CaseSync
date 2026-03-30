@@ -7,8 +7,8 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { BrainCircuit, Sparkles, Plus, Trash2, CheckCircle } from 'lucide-react';
-import { refineGoal } from '../services/geminiService';
+import { BrainCircuit, Sparkles, Plus, Trash2, CheckCircle, Loader2 } from 'lucide-react';
+import { refineGoalStream } from '../services/geminiService';
 
 export default function AIGoalRefiner({ participant }: { participant: Participant }) {
   const [roughNotes, setRoughNotes] = useState('');
@@ -18,9 +18,21 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
   const handleRefine = async () => {
     if (!roughNotes.trim()) return;
     setLoading(true);
-    const result = await refineGoal(roughNotes);
-    setRefinedGoal(result);
-    setLoading(false);
+    setRefinedGoal('');
+    
+    try {
+      const stream = refineGoalStream(roughNotes);
+      let fullText = '';
+      for await (const chunk of stream) {
+        fullText += chunk;
+        setRefinedGoal(fullText);
+      }
+    } catch (err) {
+      console.error("Refine Error:", err);
+      setRefinedGoal("Error refining goal. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleAddGoal = async () => {
@@ -74,13 +86,13 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 animate-pulse" />
-                  Generating...
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  AI is thinking...
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  Generate
+                  Generate SMART Goal
                 </span>
               )}
             </Button>
