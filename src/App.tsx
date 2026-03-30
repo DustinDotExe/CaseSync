@@ -46,9 +46,15 @@ export default function App() {
     if (isDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
+      // Update theme-color meta tag
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', '#020617');
     } else {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
+      // Update theme-color meta tag
+      const meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', '#f8fafc');
     }
   }, [isDark]);
 
@@ -304,12 +310,12 @@ export default function App() {
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
-          <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+          <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
           <div className="hidden md:flex flex-col items-end">
             <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.displayName}</span>
             <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">Court Case Manager</span>
           </div>
-          <div className="h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
+          <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
             <LogOut className="w-4 h-4 md:mr-2" />
             <span className="hidden md:inline">Sign Out</span>
