@@ -142,10 +142,10 @@ export default function App() {
         <div className="space-y-2 text-center mb-10">
           <h2 className="text-xl font-bold text-slate-800">Welcome Back</h2>
           <p className="text-slate-500 text-sm leading-relaxed">
-            The professional command center for court case managers. Manage milestones, refine goals, and generate reports with ease.
+            Sign in to begin building your case plans with ease. Currently in testing for Johnson County Problem Solving Courts.
           </p>
         </div>
-        <Button onClick={handleLogin} className="w-full bg-blue-600 hover:bg-blue-700 h-14 text-lg font-bold rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-[0.98]">
+        <Button onClick={handleLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-[0.98]">
           Sign in with Google
         </Button>
         <p className="mt-8 text-center text-xs text-slate-400">
