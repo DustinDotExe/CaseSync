@@ -345,8 +345,8 @@ export default function App() {
                       <Hash className="w-4 h-4" />
                       <span className="font-mono">{selectedParticipant.caseNumber}</span>
                     </div>
-                    <div className="w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="hidden md:flex w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
+                    <div className="hidden md:flex items-center gap-1.5">
                       <User className="w-4 h-4" />
                       <span>Assigned to {user.displayName}</span>
                     </div>

@@ -124,7 +124,7 @@ export default function CourtReport({ participant }: { participant: Participant 
               <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{participant.name} / Case Plan</h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Created on {new Date().toLocaleDateString()}</p>
             </div>
-            <div className="bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-lg md:text-xl flex items-center gap-2">
+            <div className="hidden sm:flex bg-blue-600 dark:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold text-lg md:text-xl items-center gap-2">
               <Scale className="w-5 h-5" />
               CaseSync
             </div>
