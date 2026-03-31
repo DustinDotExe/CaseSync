@@ -7,13 +7,15 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
 import { ScrollArea } from './ui/scroll-area';
-import { BrainCircuit, Sparkles, Plus, Trash2, CheckCircle, Loader2 } from 'lucide-react';
+import { BrainCircuit, Sparkles, Plus, Trash2, CheckCircle, Loader2, Pencil, Check, X } from 'lucide-react';
 import { refineGoalStream } from '../services/geminiService';
 
 export default function AIGoalRefiner({ participant }: { participant: Participant }) {
   const [roughNotes, setRoughNotes] = useState('');
   const [refinedGoal, setRefinedGoal] = useState('');
   const [loading, setLoading] = useState(false);
+  const [editingGoalIdx, setEditingGoalIdx] = useState<number | null>(null);
+  const [editingGoalValue, setEditingGoalValue] = useState('');
 
   const handleRefine = async () => {
     if (!roughNotes.trim()) return;
@@ -59,6 +61,26 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
     } catch (err) {
       console.error("Delete Goal Error:", err);
     }
+  };
+
+  const handleUpdateGoal = async (idx: number) => {
+    if (!editingGoalValue.trim()) return;
+    try {
+      const newGoals = [...participant.goals];
+      newGoals[idx] = editingGoalValue.trim();
+      await updateDoc(doc(db, 'participants', participant.id), {
+        goals: newGoals,
+        updatedAt: serverTimestamp()
+      });
+      setEditingGoalIdx(null);
+    } catch (err) {
+      console.error("Update Goal Error:", err);
+    }
+  };
+
+  const startEditingGoal = (idx: number, value: string) => {
+    setEditingGoalIdx(idx);
+    setEditingGoalValue(value);
   };
 
   return (
@@ -134,16 +156,58 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
             ) : (
               <div className="space-y-4">
                 {participant.goals.map((goal, idx) => (
-                  <div key={idx} className="p-4 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg shadow-sm flex justify-between gap-4 group">
-                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{goal}</p>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => handleDeleteGoal(goal)}
-                      className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  <div key={idx} className="p-4 bg-white dark:bg-slate-950 border border-slate-100 dark:border-slate-800 rounded-lg shadow-sm flex flex-col gap-4 group">
+                    {editingGoalIdx === idx ? (
+                      <div className="space-y-3">
+                        <Textarea 
+                          value={editingGoalValue}
+                          onChange={(e) => setEditingGoalValue(e.target.value)}
+                          className="min-h-[100px] text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500"
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            onClick={() => setEditingGoalIdx(null)}
+                            className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          >
+                            <X className="w-4 h-4 mr-1" />
+                            Cancel
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleUpdateGoal(idx)}
+                            className="bg-blue-600 dark:bg-blue-500 text-white"
+                          >
+                            <Check className="w-4 h-4 mr-1" />
+                            Save Changes
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between gap-4">
+                        <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{goal}</p>
+                        <div className="flex flex-col gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => startEditingGoal(idx, goal)}
+                            className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDeleteGoal(goal)}
+                            className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
