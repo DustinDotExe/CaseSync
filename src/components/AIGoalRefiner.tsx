@@ -92,7 +92,7 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
               <Sparkles className="w-5 h-5 text-blue-600 dark:text-blue-400" />
               Generate SMART Goals
             </CardTitle>
-            <CardDescription className="text-slate-500 dark:text-slate-400">Transform rough notes into SMART goals.</CardDescription>
+            <CardDescription className="text-slate-500 dark:text-slate-400">Create your own or transform rough notes into SMART goals.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea 
@@ -101,23 +101,44 @@ export default function AIGoalRefiner({ participant }: { participant: Participan
               placeholder="e.g., Participant needs to find a job and attend 3 meetings a week for the next month."
               className="min-h-[120px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200"
             />
-            <Button 
-              onClick={handleRefine} 
-              disabled={loading || !roughNotes.trim()} 
-              className="w-full bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white"
-            >
-              {loading ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  AI is thinking...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4" />
-                  Generate SMART Goal
-                </span>
-              )}
-            </Button>
+            <div className="flex flex-col gap-2">
+              <Button 
+                onClick={async () => {
+                  if (!roughNotes.trim()) return;
+                  try {
+                    await updateDoc(doc(db, 'participants', participant.id), {
+                      goals: arrayUnion(roughNotes.trim()),
+                      updatedAt: serverTimestamp()
+                    });
+                    setRoughNotes('');
+                  } catch (err) {
+                    console.error("Direct Add Goal Error:", err);
+                  }
+                }}
+                disabled={loading || !roughNotes.trim()}
+                className="w-full bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Add to Case Plan
+              </Button>
+              <Button 
+                onClick={handleRefine} 
+                disabled={loading || !roughNotes.trim()} 
+                className="w-full bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    AI is thinking...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    Generate SMART Goal
+                  </span>
+                )}
+              </Button>
+            </div>
 
             {refinedGoal && (
               <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-900/50 relative group animate-in fade-in slide-in-from-top-2">

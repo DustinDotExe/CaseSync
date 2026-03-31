@@ -34,10 +34,16 @@ export default function CourtReport({ participant }: { participant: Participant 
           <title>Case Plan - ${participant.name}</title>
           ${styles}
           <style>
-            body { background: white !important; padding: 20px !important; }
+            body { background: white !important; padding: 0 !important; margin: 0 !important; }
             .no-print { display: none !important; }
             .max-w-\\[8\\.5in\\] { max-width: 100% !important; width: 100% !important; }
             @page { margin: 0.5in; }
+            .print-container { 
+              zoom: 0.8; 
+              -moz-transform: scale(0.8); 
+              -moz-transform-origin: top center;
+              width: 100%;
+            }
           </style>
         </head>
         <body>
@@ -285,6 +291,12 @@ export default function CourtReport({ participant }: { participant: Participant 
             margin: 0 !important;
             padding: 0 !important;
           }
+          [data-report-container] {
+            zoom: 0.8;
+            -moz-transform: scale(0.8);
+            -moz-transform-origin: top center;
+            width: 100%;
+          }
           .print\\:shadow-none { box-shadow: none !important; }
           .print\\:border-none { border: none !important; }
           @page {
@@ -292,7 +304,7 @@ export default function CourtReport({ participant }: { participant: Participant 
             margin: 0.5in;
           }
           .max-w-5xl {
-            max-width: 8.5in !important;
+            max-width: 100% !important;
           }
         }
       `}} />

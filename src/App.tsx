@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signOut, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
@@ -37,6 +37,10 @@ export default function App() {
   const [isEditingParticipant, setIsEditingParticipant] = useState(false);
   const [editedName, setEditedName] = useState('');
   const [editedCaseNumber, setEditedCaseNumber] = useState('');
+  const [userTitle, setUserTitle] = useState('Court Case Manager');
+  const [isEditingUser, setIsEditingUser] = useState(false);
+  const [editedDisplayName, setEditedDisplayName] = useState('');
+  const [editedUserTitle, setEditedUserTitle] = useState('');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') || 
@@ -75,6 +79,32 @@ export default function App() {
       document.body.style.backgroundColor = headerColorLight;
     }
   }, [isDark, user]);
+
+  useEffect(() => {
+    if (user) {
+      setEditedDisplayName(user.displayName || '');
+      const userDocRef = doc(db, 'users', user.uid);
+      const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserTitle(data.title || 'Court Case Manager');
+          setEditedUserTitle(data.title || 'Court Case Manager');
+        } else {
+          // Initialize user doc if it doesn't exist
+          setDoc(userDocRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            role: 'case_manager',
+            title: 'Court Case Manager',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          }).catch(err => console.error("Error initializing user doc:", err));
+        }
+      });
+      return () => unsubscribe();
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -162,6 +192,23 @@ export default function App() {
       setIsEditingParticipant(false);
     } catch (err) {
       console.error("Update Error:", err);
+    }
+  };
+  
+  const handleUpdateUser = async () => {
+    if (!user || !editedDisplayName.trim() || !editedUserTitle.trim()) return;
+    try {
+      if (editedDisplayName !== user.displayName) {
+        await updateProfile(user, { displayName: editedDisplayName });
+      }
+      await updateDoc(doc(db, 'users', user.uid), {
+        displayName: editedDisplayName,
+        title: editedUserTitle,
+        updatedAt: serverTimestamp()
+      });
+      setIsEditingUser(false);
+    } catch (err) {
+      console.error("Update User Error:", err);
     }
   };
 
@@ -363,9 +410,52 @@ export default function App() {
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
           <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
-          <div className="hidden md:flex flex-col items-end">
-            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.displayName}</span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">Court Case Manager</span>
+          <div className="hidden md:flex flex-col items-end group relative">
+            {isEditingUser ? (
+              <div className="flex flex-col items-end animate-in fade-in slide-in-from-right-2">
+                <Input 
+                  value={editedDisplayName}
+                  onChange={(e) => setEditedDisplayName(e.target.value)}
+                  className="h-6 text-sm font-bold text-right bg-transparent border-none focus-visible:ring-0 p-0 w-48 text-slate-800 dark:text-slate-200 shadow-none"
+                  placeholder="Your Name"
+                  autoFocus
+                />
+                <Input 
+                  value={editedUserTitle}
+                  onChange={(e) => setEditedUserTitle(e.target.value)}
+                  className="h-5 text-[10px] font-bold text-right bg-transparent border-none focus-visible:ring-0 p-0 w-48 uppercase tracking-widest text-slate-400 dark:text-slate-500 shadow-none"
+                  placeholder="Your Title"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleUpdateUser();
+                    if (e.key === 'Escape') setIsEditingUser(false);
+                  }}
+                />
+                <div className="flex gap-1 mt-2">
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={handleUpdateUser} title="Save">
+                    <Check className="w-3 h-3" />
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => setIsEditingUser(false)} title="Cancel">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div 
+                className="flex flex-col items-end cursor-pointer hover:opacity-80 transition-all group/user" 
+                onClick={() => {
+                  setEditedDisplayName(user.displayName || '');
+                  setEditedUserTitle(userTitle);
+                  setIsEditingUser(true);
+                }}
+                title="Edit Profile"
+              >
+                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                  {user.displayName}
+                  <Pencil className="w-3 h-3 opacity-0 group-hover/user:opacity-100 transition-opacity text-slate-400" />
+                </span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">{userTitle}</span>
+              </div>
+            )}
           </div>
           <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
           <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
