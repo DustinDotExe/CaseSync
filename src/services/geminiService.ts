@@ -3,17 +3,17 @@ import { GoogleGenAI, ThinkingLevel } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
 export async function* refineGoalStream(roughNotes: string) {
-  const model = "gemini-3-flash-preview";
+  const model = "gemini-3.1-flash-lite-preview";
   const prompt = `Refine the following rough notes into a SMART goal (Specific, Measurable, Achievable, Relevant, Time-bound) for a court participant's case plan. 
-  Notes: "${roughNotes}"
-  Return only the refined goal text.`;
+  Notes: "${roughNotes}"`;
 
   try {
     const response = await ai.models.generateContentStream({
       model,
       contents: prompt,
       config: {
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        systemInstruction: "You are an expert court case manager. Your task is to refine rough notes into a single SMART goal. Return only the refined goal text. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts.",
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
       }
     });
 
@@ -29,11 +29,8 @@ export async function* refineGoalStream(roughNotes: string) {
 }
 
 export async function* refineNotesStream(notes: string) {
-  const model = "gemini-3-flash-preview";
-  const prompt = `Refine the following case notes for a court participant. 
-  
-  RULE: Rewrite these case notes into clear, professional plain language. The goal is a formal record that is easily understood by the defendant.
-  ${notes}`;
+  const model = "gemini-3.1-flash-lite-preview";
+  const prompt = notes;
 
   try {
     const response = await ai.models.generateContentStream({
@@ -41,7 +38,7 @@ export async function* refineNotesStream(notes: string) {
       contents: prompt,
       config: {
         systemInstruction: "You are an expert court case manager. Your task is to refine case note information. Rewrite these case notes into clear, professional plain language. The goal is a formal record that is easily understood by the defendant. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts.",
-        thinkingConfig: { thinkingLevel: ThinkingLevel.LOW }
+        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
       }
     });
 
