@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { LogOut, Plus, User, FileText, Scale, Search, Filter, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash } from 'lucide-react';
+import { LogOut, Plus, User, FileText, Scale, Search, Filter, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X } from 'lucide-react';
 import { 
   Sheet, 
   SheetContent, 
@@ -28,11 +28,15 @@ import { cn } from './lib/utils';
 export default function App() {
   const [user, loading] = useAuthState(auth);
   const [participants, setParticipants] = useState<Participant[]>([]);
-  const [selectedParticipant, setSelectedParticipant] = useState<Participant | null>(null);
+  const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [newParticipant, setNewParticipant] = useState({ name: '', caseNumber: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [isEditingParticipant, setIsEditingParticipant] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [editedCaseNumber, setEditedCaseNumber] = useState('');
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') || 
@@ -78,25 +82,29 @@ export default function App() {
       const unsubscribe = onSnapshot(q, (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Participant));
         setParticipants(data);
-        
-        // Update selected participant if it exists in the new data
-        if (selectedParticipant) {
-          const updated = data.find(p => p.id === selectedParticipant.id);
-          if (updated) setSelectedParticipant(updated);
-        }
       }, (err) => {
         console.error("Firestore Error:", err);
       });
       return () => unsubscribe();
     }
-  }, [user, selectedParticipant?.id]);
+  }, [user]);
+
+  const selectedParticipant = participants.find(p => p.id === selectedParticipantId) || null;
 
   const handleLogin = async () => {
+    setLoginError(null);
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (err) {
+    } catch (err: any) {
       console.error("Login Error:", err);
+      let message = "Login failed. Please check your connection and try again.";
+      if (err.code === 'auth/unauthorized-domain') {
+        message = "This domain is not authorized in Firebase. Please add it to the 'Authorized domains' list in the Firebase Console.";
+      } else if (err.code === 'auth/popup-blocked') {
+        message = "Login popup was blocked by your browser. Please allow popups for this site.";
+      }
+      setLoginError(message);
     }
   };
 
@@ -132,14 +140,36 @@ export default function App() {
   };
 
   const handleDeleteParticipant = async () => {
-    if (!selectedParticipant) return;
+    if (!selectedParticipantId) return;
     
     try {
-      await deleteDoc(doc(db, 'participants', selectedParticipant.id));
-      setSelectedParticipant(null);
+      await deleteDoc(doc(db, 'participants', selectedParticipantId));
+      setSelectedParticipantId(null);
       setIsDeleting(false);
     } catch (err) {
       console.error("Delete Error:", err);
+    }
+  };
+
+  const handleUpdateParticipant = async () => {
+    if (!selectedParticipant || !editedName.trim() || !editedCaseNumber.trim()) return;
+    try {
+      await updateDoc(doc(db, 'participants', selectedParticipant.id), {
+        name: editedName.trim(),
+        caseNumber: editedCaseNumber.trim(),
+        updatedAt: serverTimestamp()
+      });
+      setIsEditingParticipant(false);
+    } catch (err) {
+      console.error("Update Error:", err);
+    }
+  };
+
+  const startEditingParticipant = () => {
+    if (selectedParticipant) {
+      setEditedName(selectedParticipant.name);
+      setEditedCaseNumber(selectedParticipant.caseNumber);
+      setIsEditingParticipant(true);
     }
   };
 
@@ -217,10 +247,10 @@ export default function App() {
           {filteredParticipants.map(p => (
             <button
               key={p.id}
-              onClick={() => setSelectedParticipant(p)}
+              onClick={() => setSelectedParticipantId(p.id)}
               className={cn(
                 "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative border",
-                selectedParticipant?.id === p.id 
+                selectedParticipantId === p.id 
                   ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20" 
                   : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
               )}
@@ -228,11 +258,11 @@ export default function App() {
               <div className="flex justify-between items-start mb-2">
                 <span className={cn(
                   "font-bold text-sm leading-tight",
-                  selectedParticipant?.id === p.id ? "text-white" : "text-slate-800 dark:text-slate-200"
+                  selectedParticipantId === p.id ? "text-white" : "text-slate-800 dark:text-slate-200"
                 )}>{p.name}</span>
                 <Badge className={cn(
                   "text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter",
-                  selectedParticipant?.id === p.id 
+                  selectedParticipantId === p.id 
                     ? "bg-white/20 text-white border-white/20" 
                     : "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50"
                 )}>
@@ -241,7 +271,7 @@ export default function App() {
               </div>
               <div className={cn(
                 "text-[10px] font-mono tracking-tight",
-                selectedParticipant?.id === p.id ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
+                selectedParticipantId === p.id ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
               )}>{p.caseNumber}</div>
             </button>
           ))}
@@ -282,6 +312,11 @@ export default function App() {
         <Button onClick={handleLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-[0.98]">
           Sign in with Google
         </Button>
+        {loginError && (
+          <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl text-center">
+            {loginError}
+          </div>
+        )}
         <p className="mt-8 text-center text-xs text-slate-400">
           Secure, encrypted access for authorized personnel only.
         </p>
@@ -353,20 +388,77 @@ export default function App() {
               <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{selectedParticipant.name}</h2>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={() => setIsDeleting(true)}
-                      className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full h-8 w-8 ml-2"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {isEditingParticipant ? (
+                      <div className="flex items-center gap-3 flex-1">
+                        <Input 
+                          value={editedName}
+                          onChange={(e) => setEditedName(e.target.value)}
+                          className="text-2xl font-black h-12 bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500"
+                          autoFocus
+                          placeholder="Participant Name"
+                        />
+                        <div className="flex gap-2">
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            onClick={handleUpdateParticipant}
+                            className="h-10 w-10 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-950/30"
+                          >
+                            <Check className="w-5 h-5" />
+                          </Button>
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            onClick={() => setIsEditingParticipant(false)}
+                            className="h-10 w-10 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
+                          >
+                            <X className="w-5 h-5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h2 className="text-4xl font-black text-slate-900 dark:text-white tracking-tight">{selectedParticipant.name}</h2>
+                        <div className="flex items-center gap-1 ml-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={startEditingParticipant}
+                            className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-full h-8 w-8"
+                            title="Edit Profile"
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => setIsDeleting(true)}
+                            className="text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-full h-8 w-8"
+                            title="Delete Profile"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-4 text-slate-500 dark:text-slate-400 font-medium">
                     <div className="flex items-center gap-1.5">
                       <Hash className="w-4 h-4" />
-                      <span className="font-mono">{selectedParticipant.caseNumber}</span>
+                      {isEditingParticipant ? (
+                        <Input 
+                          value={editedCaseNumber}
+                          onChange={(e) => setEditedCaseNumber(e.target.value)}
+                          className="h-8 w-40 font-mono text-xs bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500"
+                          placeholder="Case Number"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') handleUpdateParticipant();
+                            if (e.key === 'Escape') setIsEditingParticipant(false);
+                          }}
+                        />
+                      ) : (
+                        <span className="font-mono">{selectedParticipant.caseNumber}</span>
+                      )}
                     </div>
                     <div className="hidden md:flex w-1 h-1 bg-slate-300 dark:bg-slate-700 rounded-full"></div>
                     <div className="hidden md:flex items-center gap-1.5">
