@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut, updateProfile } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signOut } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { logAuditEvent } from './services/auditService';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
 import { Input } from './components/ui/input';
@@ -11,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { LogOut, Plus, User, FileText, Scale, Search, Filter, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X } from 'lucide-react';
+import { Plus, User, FileText, Scale, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings } from 'lucide-react';
 import { 
   Sheet, 
   SheetContent, 
@@ -19,10 +20,12 @@ import {
   SheetHeader,
   SheetTitle
 } from './components/ui/sheet';
-import { Participant } from './types';
+import { Participant, CurrentUser, StoredTemplateCategory } from './types';
 import CasePlanEditor from './components/CasePlanEditor';
-import AIGoalRefiner from './components/AIGoalRefiner';
+import AIGoalRefiner, { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefiner';
 import CourtReport from './components/CourtReport';
+import AuditLog from './components/AuditLog';
+import UserSettings from './components/UserSettings';
 import { cn } from './lib/utils';
 
 export default function App() {
@@ -35,15 +38,23 @@ export default function App() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [isEditingParticipant, setIsEditingParticipant] = useState(false);
+  const [activeTab, setActiveTab] = useState('plan');
   const [editedName, setEditedName] = useState('');
   const [editedCaseNumber, setEditedCaseNumber] = useState('');
   const [userTitle, setUserTitle] = useState('Court Case Manager');
-  const [isEditingUser, setIsEditingUser] = useState(false);
-  const [editedDisplayName, setEditedDisplayName] = useState('');
-  const [editedUserTitle, setEditedUserTitle] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [goalTemplates, setGoalTemplates] = useState<StoredTemplateCategory[]>(DEFAULT_STORED_TEMPLATES);
+  const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>(() => {
+    const stored = localStorage.getItem('themePreference') as 'light' | 'dark' | 'system' | null;
+    return stored || 'system';
+  });
+  const [paletteColor, setPaletteColor] = useState<'orange' | 'blue' | 'red' | 'green'>(() => {
+    const stored = localStorage.getItem('paletteColor') as 'orange' | 'blue' | 'red' | 'green' | null;
+    return stored || 'orange';
+  });
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark') || 
+      return document.documentElement.classList.contains('dark') ||
              localStorage.getItem('theme') === 'dark' ||
              (!localStorage.getItem('theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
     }
@@ -81,14 +92,17 @@ export default function App() {
   }, [isDark, user]);
 
   useEffect(() => {
+    document.documentElement.dataset.palette = paletteColor;
+  }, [paletteColor]);
+
+  useEffect(() => {
     if (user) {
-      setEditedDisplayName(user.displayName || '');
       const userDocRef = doc(db, 'users', user.uid);
       const unsubscribe = onSnapshot(userDocRef, (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setUserTitle(data.title || 'Court Case Manager');
-          setEditedUserTitle(data.title || 'Court Case Manager');
+          if (data.goalTemplates?.length) setGoalTemplates(data.goalTemplates);
         } else {
           // Initialize user doc if it doesn't exist
           setDoc(userDocRef, {
@@ -120,6 +134,9 @@ export default function App() {
   }, [user]);
 
   const selectedParticipant = participants.find(p => p.id === selectedParticipantId) || null;
+  const currentUser: CurrentUser = user
+    ? { uid: user.uid, displayName: user.displayName, email: user.email }
+    : { uid: '', displayName: null, email: null };
 
   const handleLogin = async () => {
     setLoginError(null);
@@ -138,14 +155,12 @@ export default function App() {
     }
   };
 
-  const handleLogout = () => signOut(auth);
-
   const handleAddParticipant = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !newParticipant.name || !newParticipant.caseNumber) return;
 
     try {
-      await addDoc(collection(db, 'participants'), {
+      const docRef = await addDoc(collection(db, 'participants'), {
         ...newParticipant,
         currentPhase: 1,
         goals: [],
@@ -162,6 +177,14 @@ export default function App() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      logAuditEvent({
+        participantId: docRef.id,
+        caseManagerUid: user.uid,
+        category: 'participant_created',
+        description: `Created participant profile for ${newParticipant.name}`,
+        details: { field: 'caseNumber', newValue: newParticipant.caseNumber },
+        currentUser: { uid: user.uid, displayName: user.displayName, email: user.email }
+      });
       setNewParticipant({ name: '', caseNumber: '' });
       setIsAdding(false);
     } catch (err) {
@@ -170,9 +193,18 @@ export default function App() {
   };
 
   const handleDeleteParticipant = async () => {
-    if (!selectedParticipantId) return;
-    
+    if (!selectedParticipantId || !selectedParticipant || !user) return;
+
     try {
+      // Log before delete so the entry persists in auditLog collection
+      await logAuditEvent({
+        participantId: selectedParticipantId,
+        caseManagerUid: user.uid,
+        category: 'participant_deleted',
+        description: `Deleted participant profile for ${selectedParticipant.name}`,
+        details: { field: 'caseNumber', oldValue: selectedParticipant.caseNumber },
+        currentUser: { uid: user.uid, displayName: user.displayName, email: user.email }
+      });
       await deleteDoc(doc(db, 'participants', selectedParticipantId));
       setSelectedParticipantId(null);
       setIsDeleting(false);
@@ -182,33 +214,53 @@ export default function App() {
   };
 
   const handleUpdateParticipant = async () => {
-    if (!selectedParticipant || !editedName.trim() || !editedCaseNumber.trim()) return;
+    if (!selectedParticipant || !editedName.trim() || !editedCaseNumber.trim() || !user) return;
+    const nameChanged = editedName.trim() !== selectedParticipant.name;
+    const caseChanged = editedCaseNumber.trim() !== selectedParticipant.caseNumber;
     try {
       await updateDoc(doc(db, 'participants', selectedParticipant.id), {
         name: editedName.trim(),
         caseNumber: editedCaseNumber.trim(),
         updatedAt: serverTimestamp()
       });
+      if (nameChanged) {
+        logAuditEvent({
+          participantId: selectedParticipant.id,
+          caseManagerUid: user.uid,
+          category: 'participant_info_updated',
+          description: 'Participant Name Updated',
+          details: { field: 'name', oldValue: selectedParticipant.name, newValue: editedName.trim() },
+          currentUser: { uid: user.uid, displayName: user.displayName, email: user.email }
+        });
+      }
+      if (caseChanged) {
+        logAuditEvent({
+          participantId: selectedParticipant.id,
+          caseManagerUid: user.uid,
+          category: 'participant_info_updated',
+          description: 'Case Number Updated',
+          details: { field: 'caseNumber', oldValue: selectedParticipant.caseNumber, newValue: editedCaseNumber.trim() },
+          currentUser: { uid: user.uid, displayName: user.displayName, email: user.email }
+        });
+      }
       setIsEditingParticipant(false);
     } catch (err) {
       console.error("Update Error:", err);
     }
   };
   
-  const handleUpdateUser = async () => {
-    if (!user || !editedDisplayName.trim() || !editedUserTitle.trim()) return;
-    try {
-      if (editedDisplayName !== user.displayName) {
-        await updateProfile(user, { displayName: editedDisplayName });
-      }
-      await updateDoc(doc(db, 'users', user.uid), {
-        displayName: editedDisplayName,
-        title: editedUserTitle,
-        updatedAt: serverTimestamp()
-      });
-      setIsEditingUser(false);
-    } catch (err) {
-      console.error("Update User Error:", err);
+  const handlePaletteChange = (color: 'orange' | 'blue' | 'red' | 'green') => {
+    setPaletteColor(color);
+    localStorage.setItem('paletteColor', color);
+  };
+
+  const handleThemeChange = (pref: 'light' | 'dark' | 'system') => {
+    setThemePreference(pref);
+    localStorage.setItem('themePreference', pref);
+    if (pref === 'system') {
+      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    } else {
+      setIsDark(pref === 'dark');
     }
   };
 
@@ -230,7 +282,7 @@ export default function App() {
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider text-xs">Participants</h2>
-          <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-full">
+          <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-900/20 rounded-full">
             <Plus className="w-5 h-5" />
           </Button>
         </div>
@@ -241,7 +293,7 @@ export default function App() {
             placeholder="Search by name or case..." 
             value={searchTerm}
             onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-blue-500 h-10 rounded-xl"
+            className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-burnt-peach-500 h-10 rounded-xl"
           />
         </div>
       </div>
@@ -249,7 +301,7 @@ export default function App() {
       <ScrollArea className="flex-1 pb-6">
         <div className="space-y-2 px-4">
           {isAdding && (
-            <Card className="mb-4 border-blue-200 dark:border-blue-900 bg-blue-50/30 dark:bg-blue-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
+            <Card className="mb-4 border-burnt-peach-200 dark:border-burnt-peach-900 bg-burnt-peach-50/30 dark:bg-burnt-peach-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
               <CardContent className="p-4">
                 <form onSubmit={handleAddParticipant} className="space-y-4">
                   <div className="space-y-1.5">
@@ -274,7 +326,7 @@ export default function App() {
                     />
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button type="submit" size="sm" className="flex-1 bg-blue-600 dark:bg-blue-500 text-white font-bold">Create Profile</Button>
+                    <Button type="submit" size="sm" className="flex-1 bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white font-bold">Create Profile</Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setIsAdding(false)} className="font-bold text-slate-500 dark:text-slate-400">Cancel</Button>
                   </div>
                 </form>
@@ -294,11 +346,11 @@ export default function App() {
           {filteredParticipants.map(p => (
             <button
               key={p.id}
-              onClick={() => setSelectedParticipantId(p.id)}
+              onClick={() => { setSelectedParticipantId(p.id); setActiveTab('plan'); }}
               className={cn(
                 "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative border",
                 selectedParticipantId === p.id 
-                  ? "bg-blue-600 border-blue-600 shadow-lg shadow-blue-100 dark:shadow-blue-900/20" 
+                  ? "bg-burnt-peach-600 border-burnt-peach-600 shadow-lg shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20" 
                   : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
               )}
             >
@@ -311,14 +363,14 @@ export default function App() {
                   "text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter",
                   selectedParticipantId === p.id 
                     ? "bg-white/20 text-white border-white/20" 
-                    : "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-100 dark:border-blue-900/50"
+                    : "bg-burnt-peach-50 dark:bg-burnt-peach-900/30 text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-100 dark:border-burnt-peach-900/50"
                 )}>
                   P{p.currentPhase}
                 </Badge>
               </div>
               <div className={cn(
                 "text-[10px] font-mono tracking-tight",
-                selectedParticipantId === p.id ? "text-blue-200" : "text-slate-400 dark:text-slate-500"
+                selectedParticipantId === p.id ? "text-burnt-peach-200" : "text-slate-400 dark:text-slate-500"
               )}>{p.caseNumber}</div>
             </button>
           ))}
@@ -332,7 +384,7 @@ export default function App() {
       <div className="h-safe-top bg-white w-full shrink-0"></div>
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-burnt-peach-200 border-t-burnt-peach-600 rounded-full animate-spin"></div>
           <div className="text-slate-400 font-medium animate-pulse">Initializing CaseSync...</div>
         </div>
       </div>
@@ -345,7 +397,7 @@ export default function App() {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-slate-200">
           <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="bg-blue-600 p-2.5 rounded-xl shadow-lg shadow-blue-200">
+          <div className="bg-burnt-peach-600 p-2.5 rounded-xl shadow-lg shadow-burnt-peach-200">
             <Scale className="w-7 h-7 text-white" />
           </div>
           <h1 className="text-3xl font-black text-slate-900 tracking-tight">CaseSync</h1>
@@ -356,7 +408,7 @@ export default function App() {
             Sign in to begin building your case plans with ease. Currently in testing for Johnson County Problem Solving Courts.
           </p>
         </div>
-        <Button onClick={handleLogin} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-blue-100 transition-all active:scale-[0.98]">
+        <Button onClick={handleLogin} className="w-full bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-burnt-peach-100 transition-all active:scale-[0.98]">
           Sign in with Google
         </Button>
         {loginError && (
@@ -385,7 +437,7 @@ export default function App() {
             <SheetContent side="left" className="p-0 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
               <SheetHeader className="p-6 border-b border-slate-100 dark:border-slate-800">
                 <SheetTitle className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-blue-600" />
+                  <Scale className="w-5 h-5 text-burnt-peach-600" />
                   <span className="font-black tracking-tight">CaseSync</span>
                 </SheetTitle>
               </SheetHeader>
@@ -393,7 +445,7 @@ export default function App() {
             </SheetContent>
           </Sheet>
 
-          <div className="bg-blue-600 p-2 rounded-lg shadow-md shadow-blue-100 dark:shadow-blue-900/20 hidden md:block">
+          <div className="bg-burnt-peach-600 p-2 rounded-lg shadow-md shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 hidden md:block">
             <Scale className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CaseSync</h1>
@@ -410,57 +462,18 @@ export default function App() {
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
           <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
-          <div className="hidden md:flex flex-col items-end group relative">
-            {isEditingUser ? (
-              <div className="flex flex-col items-end animate-in fade-in slide-in-from-right-2">
-                <Input 
-                  value={editedDisplayName}
-                  onChange={(e) => setEditedDisplayName(e.target.value)}
-                  className="h-6 text-sm font-bold text-right bg-transparent border-none focus-visible:ring-0 p-0 w-48 text-slate-800 dark:text-slate-200 shadow-none"
-                  placeholder="Your Name"
-                  autoFocus
-                />
-                <Input 
-                  value={editedUserTitle}
-                  onChange={(e) => setEditedUserTitle(e.target.value)}
-                  className="h-5 text-[10px] font-bold text-right bg-transparent border-none focus-visible:ring-0 p-0 w-48 uppercase tracking-widest text-slate-400 dark:text-slate-500 shadow-none"
-                  placeholder="Your Title"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleUpdateUser();
-                    if (e.key === 'Escape') setIsEditingUser(false);
-                  }}
-                />
-                <div className="flex gap-1 mt-2">
-                  <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20" onClick={handleUpdateUser} title="Save">
-                    <Check className="w-3 h-3" />
-                  </Button>
-                  <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20" onClick={() => setIsEditingUser(false)} title="Cancel">
-                    <X className="w-3 h-3" />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div 
-                className="flex flex-col items-end cursor-pointer hover:opacity-80 transition-all group/user" 
-                onClick={() => {
-                  setEditedDisplayName(user.displayName || '');
-                  setEditedUserTitle(userTitle);
-                  setIsEditingUser(true);
-                }}
-                title="Edit Profile"
-              >
-                <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                  {user.displayName}
-                  <Pencil className="w-3 h-3 opacity-0 group-hover/user:opacity-100 transition-opacity text-slate-400" />
-                </span>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">{userTitle}</span>
-              </div>
-            )}
+          <div className="hidden md:flex flex-col items-end">
+            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.displayName}</span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">{userTitle}</span>
           </div>
-          <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
-          <Button variant="ghost" size="sm" onClick={handleLogout} className="text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
-            <LogOut className="w-4 h-4 md:mr-2" />
-            <span className="hidden md:inline">Sign Out</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setSettingsOpen(true)}
+            className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+            title="Settings"
+          >
+            <Settings className="w-5 h-5" />
           </Button>
         </div>
       </header>
@@ -483,7 +496,7 @@ export default function App() {
                         <Input 
                           value={editedName}
                           onChange={(e) => setEditedName(e.target.value)}
-                          className="text-2xl font-black h-12 bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500"
+                          className="text-2xl font-black h-12 bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-800 focus-visible:ring-burnt-peach-500"
                           autoFocus
                           placeholder="Participant Name"
                         />
@@ -514,7 +527,7 @@ export default function App() {
                             variant="ghost" 
                             size="icon" 
                             onClick={startEditingParticipant}
-                            className="text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 rounded-full h-8 w-8"
+                            className="text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 rounded-full h-8 w-8"
                             title="Edit Profile"
                           >
                             <Pencil className="w-4 h-4" />
@@ -539,7 +552,7 @@ export default function App() {
                         <Input 
                           value={editedCaseNumber}
                           onChange={(e) => setEditedCaseNumber(e.target.value)}
-                          className="h-8 w-40 font-mono text-xs bg-white dark:bg-slate-900 border-blue-200 dark:border-blue-800 focus-visible:ring-blue-500"
+                          className="h-8 w-40 font-mono text-xs bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-800 focus-visible:ring-burnt-peach-500"
                           placeholder="Case Number"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') handleUpdateParticipant();
@@ -562,7 +575,7 @@ export default function App() {
                   <div className="space-y-1">
                     <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Current Phase</p>
                     <div className="flex items-center gap-2">
-                      <span className="text-2xl font-black text-blue-600 dark:text-blue-400">{selectedParticipant.currentPhase}</span>
+                      <span className="text-2xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{selectedParticipant.currentPhase}</span>
                       <span className="text-slate-300 dark:text-slate-700 font-bold">/ 5</span>
                     </div>
                   </div>
@@ -577,41 +590,49 @@ export default function App() {
                 </div>
               </div>
 
-              <Tabs defaultValue="plan" className="w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
                 <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 h-14 rounded-2xl shadow-sm inline-flex w-auto">
-                  <TabsTrigger value="plan" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
-                    <LayoutDashboard className="w-4 h-4 md:mr-2" />
+                  <TabsTrigger value="plan" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <LayoutDashboard className="w-4 h-4" />
                     <span className="hidden md:inline">Overview</span>
                   </TabsTrigger>
-                  <TabsTrigger value="ai" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
-                    <Target className="w-4 h-4 md:mr-2" />
+                  <TabsTrigger value="ai" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <Target className="w-4 h-4" />
                     <span className="hidden md:inline">Goals</span>
                   </TabsTrigger>
-                  <TabsTrigger value="report" className="data-[state=active]:bg-blue-600 dark:data-[state=active]:bg-blue-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
-                    <FileText className="w-4 h-4 md:mr-2" />
+                  <TabsTrigger value="report" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <FileText className="w-4 h-4" />
                     <span className="hidden md:inline">Case Plan</span>
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                    <History className="w-4 h-4" />
+                    <span className="hidden md:inline">History</span>
                   </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="plan" className="mt-6 outline-none">
-                  <CasePlanEditor participant={selectedParticipant} />
+                  <CasePlanEditor participant={selectedParticipant} currentUser={currentUser} />
                 </TabsContent>
 
                 <TabsContent value="ai" className="mt-6 outline-none">
-                  <AIGoalRefiner participant={selectedParticipant} />
+                  <AIGoalRefiner participant={selectedParticipant} currentUser={currentUser} goalTemplates={goalTemplates} />
                 </TabsContent>
 
                 <TabsContent value="report" className="mt-6 outline-none">
-                  <CourtReport participant={selectedParticipant} />
+                  <CourtReport participant={selectedParticipant} currentUser={currentUser} />
+                </TabsContent>
+
+                <TabsContent value="history" className="mt-6 outline-none">
+                  <AuditLog participant={selectedParticipant} />
                 </TabsContent>
               </Tabs>
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-slate-400 p-10">
               <div className="relative mb-8">
-                <div className="absolute inset-0 bg-blue-100 dark:bg-blue-900/20 rounded-full blur-3xl opacity-30 animate-pulse"></div>
-                <div className="relative bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] shadow-2xl border border-slate-100 dark:border-slate-800">
-                  <Scale className="w-20 h-20 text-blue-600 dark:text-blue-500" />
+                <div className="absolute inset-0 bg-burnt-peach-100 dark:bg-burnt-peach-900/20 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+                <div className="relative bg-burnt-peach-600 p-10 rounded-[2.5rem]">
+                  <Scale className="w-20 h-20 text-white" />
                 </div>
               </div>
               <div className="text-center max-w-sm space-y-3">
@@ -658,6 +679,22 @@ export default function App() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {user && (
+        <UserSettings
+          open={settingsOpen}
+          onOpenChange={setSettingsOpen}
+          user={{ uid: user.uid, displayName: user.displayName, email: user.email }}
+          userTitle={userTitle}
+          isDark={isDark}
+          themePreference={themePreference}
+          onThemeChange={handleThemeChange}
+          paletteColor={paletteColor}
+          onPaletteChange={handlePaletteChange}
+          goalTemplates={goalTemplates}
+          onGoalTemplatesChange={setGoalTemplates}
+        />
       )}
     </div>
   );

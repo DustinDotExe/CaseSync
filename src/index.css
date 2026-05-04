@@ -3,6 +3,18 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-burnt-peach-50: #fbeee9;
+  --color-burnt-peach-100: #f8dcd3;
+  --color-burnt-peach-200: #f1baa7;
+  --color-burnt-peach-300: #ea977b;
+  --color-burnt-peach-400: #e27450;
+  --color-burnt-peach-500: #db5224;
+  --color-burnt-peach-600: #af411d;
+  --color-burnt-peach-700: #843115;
+  --color-burnt-peach-800: #58210e;
+  --color-burnt-peach-900: #2c1007;
+  --color-burnt-peach-950: #1f0b05;
 }
 
 @layer base {
@@ -31,16 +43,258 @@
   background: #cbd5e1;
 }
 
+/* ── Palette overrides ───────────────────────────────────────────────────── */
+/* Orange (Tailwind orange) */
+:root[data-palette="orange"] {
+  --color-burnt-peach-50:  #fff7ed;
+  --color-burnt-peach-100: #ffedd5;
+  --color-burnt-peach-200: #fed7aa;
+  --color-burnt-peach-300: #fdba74;
+  --color-burnt-peach-400: #fb923c;
+  --color-burnt-peach-500: #f97316;
+  --color-burnt-peach-600: #ea580c;
+  --color-burnt-peach-700: #c2410c;
+  --color-burnt-peach-800: #9a3412;
+  --color-burnt-peach-900: #7c2d12;
+  --color-burnt-peach-950: #431407;
+  --primary: #c2410c;
+  --primary-foreground: #fff7ed;
+  --accent: #fff7ed;
+  --accent-foreground: #9a3412;
+  --ring: #fb923c;
+}
+.dark[data-palette="orange"] {
+  --color-burnt-peach-50:  #fff7ed;
+  --color-burnt-peach-100: #ffedd5;
+  --color-burnt-peach-200: #fed7aa;
+  --color-burnt-peach-300: #fdba74;
+  --color-burnt-peach-400: #fb923c;
+  --color-burnt-peach-500: #f97316;
+  --color-burnt-peach-600: #ea580c;
+  --color-burnt-peach-700: #c2410c;
+  --color-burnt-peach-800: #9a3412;
+  --color-burnt-peach-900: #7c2d12;
+  --color-burnt-peach-950: #431407;
+  --primary: #fb923c;
+  --primary-foreground: #431407;
+  --accent: #7c2d12;
+  --accent-foreground: #fdba74;
+  --ring: #ea580c;
+}
+
+/* Blue */
+:root[data-palette="blue"] {
+  --color-burnt-peach-50:  #eff6ff;
+  --color-burnt-peach-100: #dbeafe;
+  --color-burnt-peach-200: #bfdbfe;
+  --color-burnt-peach-300: #93c5fd;
+  --color-burnt-peach-400: #60a5fa;
+  --color-burnt-peach-500: #3b82f6;
+  --color-burnt-peach-600: #2563eb;
+  --color-burnt-peach-700: #1d4ed8;
+  --color-burnt-peach-800: #1e40af;
+  --color-burnt-peach-900: #1e3a8a;
+  --color-burnt-peach-950: #172554;
+  --primary: #1d4ed8;
+  --primary-foreground: #eff6ff;
+  --accent: #eff6ff;
+  --accent-foreground: #1e40af;
+  --ring: #60a5fa;
+}
+.dark[data-palette="blue"] {
+  --color-burnt-peach-50:  #eff6ff;
+  --color-burnt-peach-100: #dbeafe;
+  --color-burnt-peach-200: #bfdbfe;
+  --color-burnt-peach-300: #93c5fd;
+  --color-burnt-peach-400: #60a5fa;
+  --color-burnt-peach-500: #3b82f6;
+  --color-burnt-peach-600: #2563eb;
+  --color-burnt-peach-700: #1d4ed8;
+  --color-burnt-peach-800: #1e40af;
+  --color-burnt-peach-900: #1e3a8a;
+  --color-burnt-peach-950: #172554;
+  --primary: #60a5fa;
+  --primary-foreground: #172554;
+  --accent: #1e3a8a;
+  --accent-foreground: #93c5fd;
+  --ring: #2563eb;
+}
+
+/* Red */
+:root[data-palette="red"] {
+  --color-burnt-peach-50:  #fef2f2;
+  --color-burnt-peach-100: #fee2e2;
+  --color-burnt-peach-200: #fecaca;
+  --color-burnt-peach-300: #fca5a5;
+  --color-burnt-peach-400: #f87171;
+  --color-burnt-peach-500: #ef4444;
+  --color-burnt-peach-600: #dc2626;
+  --color-burnt-peach-700: #b91c1c;
+  --color-burnt-peach-800: #991b1b;
+  --color-burnt-peach-900: #7f1d1d;
+  --color-burnt-peach-950: #450a0a;
+  --primary: #b91c1c;
+  --primary-foreground: #fef2f2;
+  --accent: #fef2f2;
+  --accent-foreground: #991b1b;
+  --ring: #f87171;
+}
+.dark[data-palette="red"] {
+  --color-burnt-peach-50:  #fef2f2;
+  --color-burnt-peach-100: #fee2e2;
+  --color-burnt-peach-200: #fecaca;
+  --color-burnt-peach-300: #fca5a5;
+  --color-burnt-peach-400: #f87171;
+  --color-burnt-peach-500: #ef4444;
+  --color-burnt-peach-600: #dc2626;
+  --color-burnt-peach-700: #b91c1c;
+  --color-burnt-peach-800: #991b1b;
+  --color-burnt-peach-900: #7f1d1d;
+  --color-burnt-peach-950: #450a0a;
+  --primary: #f87171;
+  --primary-foreground: #450a0a;
+  --accent: #7f1d1d;
+  --accent-foreground: #fca5a5;
+  --ring: #dc2626;
+}
+
+/* Green */
+:root[data-palette="green"] {
+  --color-burnt-peach-50:  #f0fdf4;
+  --color-burnt-peach-100: #dcfce7;
+  --color-burnt-peach-200: #bbf7d0;
+  --color-burnt-peach-300: #86efac;
+  --color-burnt-peach-400: #4ade80;
+  --color-burnt-peach-500: #22c55e;
+  --color-burnt-peach-600: #16a34a;
+  --color-burnt-peach-700: #15803d;
+  --color-burnt-peach-800: #166534;
+  --color-burnt-peach-900: #14532d;
+  --color-burnt-peach-950: #052e16;
+  --primary: #15803d;
+  --primary-foreground: #f0fdf4;
+  --accent: #f0fdf4;
+  --accent-foreground: #166534;
+  --ring: #4ade80;
+}
+.dark[data-palette="green"] {
+  --color-burnt-peach-50:  #f0fdf4;
+  --color-burnt-peach-100: #dcfce7;
+  --color-burnt-peach-200: #bbf7d0;
+  --color-burnt-peach-300: #86efac;
+  --color-burnt-peach-400: #4ade80;
+  --color-burnt-peach-500: #22c55e;
+  --color-burnt-peach-600: #16a34a;
+  --color-burnt-peach-700: #15803d;
+  --color-burnt-peach-800: #166534;
+  --color-burnt-peach-900: #14532d;
+  --color-burnt-peach-950: #052e16;
+  --primary: #4ade80;
+  --primary-foreground: #052e16;
+  --accent: #14532d;
+  --accent-foreground: #86efac;
+  --ring: #16a34a;
+}
+
 @media print {
-  .no-print {
+  /* ── Page setup ──────────────────────────────────────────── */
+  @page {
+    size: letter portrait;
+    margin: 0.75in;
+  }
+
+  html, body {
+    background: white !important;
+    height: auto !important;
+    overflow: visible !important;
+    /* Preserve background colors (badges, accents) */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* ── Isolate the report card ─────────────────────────────── */
+  /* Hide the entire page, then reveal only the report.        */
+  /* beforeprint removes .dark so colors are always light.     */
+  body * { visibility: hidden; }
+
+  [data-report-container],
+  [data-report-container] * { visibility: visible; }
+
+  [data-report-container] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ── Hide interactive-only UI in print ──────────────────── */
+  .no-print { display: none !important; }
+
+  /* ── Card layout ─────────────────────────────────────────── */
+  [data-report-container] .max-w-5xl {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+  }
+  [data-report-container] [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  /* ── Expand scroll areas so all content prints ───────────── */
+  [data-report-container] [data-slot="scroll-area"],
+  [data-report-container] [data-slot="scroll-area-viewport"] {
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+  [data-report-container] [data-slot="scroll-area-scrollbar"] {
     display: none !important;
   }
-  body {
+
+  /* ── Case Plan checkbox fallback ─────────────────────────── */
+  .case-plan-print-checkbox {
+    display: inline-flex !important;
+    width: 1rem !important;
+    height: 1rem !important;
+    flex: 0 0 1rem !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 1px solid var(--color-burnt-peach-600) !important;
+    border-radius: 4px !important;
     background: white !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
-  .print-container {
-    padding: 0 !important;
-    margin: 0 !important;
+
+  .case-plan-print-checkbox[data-checked="true"] {
+    background: var(--color-burnt-peach-600) !important;
+    border-color: var(--color-burnt-peach-600) !important;
+  }
+
+  .case-plan-print-checkbox[data-checked="true"]::after {
+    content: "";
+    width: 0.35rem;
+    height: 0.6rem;
+    border: solid currentColor;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg) translateY(-1px);
+  }
+
+  /* ── Page-break control ──────────────────────────────────── */
+  section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+  h2, h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+  [data-report-container] .pt-12 {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }
 @import "tw-animate-css";
@@ -107,18 +361,18 @@
     --card-foreground: #171717;
     --popover: #ffffff;
     --popover-foreground: #171717;
-    --primary: #171717;
-    --primary-foreground: #fafafa;
+    --primary: #af411d;
+    --primary-foreground: #fbeee9;
     --secondary: #f5f5f5;
     --secondary-foreground: #171717;
     --muted: #f5f5f5;
     --muted-foreground: #737373;
-    --accent: #f5f5f5;
-    --accent-foreground: #171717;
+    --accent: #fbeee9;
+    --accent-foreground: #58210e;
     --destructive: #ef4444;
     --border: #e5e5e5;
     --input: #e5e5e5;
-    --ring: #a3a3a3;
+    --ring: #e27450;
     --chart-1: #d4d4d4;
     --chart-2: #737373;
     --chart-3: #525252;
@@ -142,18 +396,18 @@
     --card-foreground: #fafafa;
     --popover: #262626;
     --popover-foreground: #fafafa;
-    --primary: #ececec;
-    --primary-foreground: #262626;
+    --primary: #e27450;
+    --primary-foreground: #1f0b05;
     --secondary: #404040;
     --secondary-foreground: #fafafa;
     --muted: #404040;
     --muted-foreground: #a3a3a3;
-    --accent: #404040;
-    --accent-foreground: #fafafa;
+    --accent: #2c1007;
+    --accent-foreground: #ea977b;
     --destructive: #991b1b;
     --border: rgba(255, 255, 255, 0.1);
     --input: rgba(255, 255, 255, 0.15);
-    --ring: #737373;
+    --ring: #af411d;
     --chart-1: #d4d4d4;
     --chart-2: #737373;
     --chart-3: #525252;
@@ -161,7 +415,7 @@
     --chart-5: #262626;
     --sidebar: #262626;
     --sidebar-foreground: #fafafa;
-    --sidebar-primary: #3b82f6;
+    --sidebar-primary: #db5224;
     --sidebar-primary-foreground: #fafafa;
     --sidebar-accent: #404040;
     --sidebar-accent-foreground: #fafafa;

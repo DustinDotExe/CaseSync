@@ -1,14 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Participant } from '../types';
+import { Participant, CurrentUser } from '../types';
+import { logAuditEvent } from '../services/auditService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Badge } from './ui/badge';
-import { Separator } from './ui/separator';
 import { Save, Mic, Sparkles, Loader2, MicOff } from 'lucide-react';
 import { refineNotesStream } from '../services/geminiService';
 
@@ -21,7 +20,15 @@ const IRAS_DOMAINS = [
   "Criminal Attitudes and Behaviors"
 ];
 
-export default function CasePlanEditor({ participant }: { participant: Participant }) {
+const PHASE_NAMES: Record<string, string> = {
+  phase1: 'Orientation & Stabilization',
+  phase2: 'Active Treatment',
+  phase3: 'Relapse Prevention',
+  phase4: 'Community Reintegration',
+  phase5: 'Commencement Preparation'
+};
+
+export default function CasePlanEditor({ participant, currentUser }: { participant: Participant; currentUser: CurrentUser }) {
   const [notes, setNotes] = useState(participant.notes);
   const [milestones, setMilestones] = useState(participant.milestones);
   const [irasDomains, setIrasDomains] = useState(participant.irasDomains || []);
@@ -132,10 +139,10 @@ export default function CasePlanEditor({ participant }: { participant: Participa
 
   const handleToggleIrasDomain = async (domain: string) => {
     const isSelected = irasDomains.includes(domain);
-    const newDomains = isSelected 
+    const newDomains = isSelected
       ? irasDomains.filter(d => d !== domain)
       : [...irasDomains, domain];
-    
+
     setIrasDomains(newDomains);
 
     try {
@@ -143,16 +150,25 @@ export default function CasePlanEditor({ participant }: { participant: Participa
         irasDomains: newDomains,
         updatedAt: serverTimestamp()
       });
+      logAuditEvent({
+        participantId: participant.id,
+        caseManagerUid: participant.uid,
+        category: 'iras_domain_updated',
+        description: isSelected
+          ? `Target Domain Removed: ${domain}`
+          : `Target Domain Added: ${domain}`,
+        currentUser
+      });
     } catch (err) {
       console.error("Update IRAS Error:", err);
     }
   };
 
   const handleToggleMilestone = async (phase: keyof typeof milestones) => {
-    const newMilestones = { ...milestones, [phase]: !milestones[phase] };
+    const completing = !milestones[phase];
+    const newMilestones = { ...milestones, [phase]: completing };
     setMilestones(newMilestones);
-    
-    // Auto-calculate phase based on milestones
+
     let newPhase = 1;
     if (newMilestones.phase5) newPhase = 5;
     else if (newMilestones.phase4) newPhase = 4;
@@ -165,6 +181,17 @@ export default function CasePlanEditor({ participant }: { participant: Participa
         currentPhase: newPhase,
         updatedAt: serverTimestamp()
       });
+      const phaseName = PHASE_NAMES[phase] ?? phase;
+      logAuditEvent({
+        participantId: participant.id,
+        caseManagerUid: participant.uid,
+        category: 'phase_transition',
+        description: completing
+          ? `Milestone Completed: ${phaseName}`
+          : `Milestone Unchecked: ${phaseName}`,
+        details: { newValue: `Phase ${newPhase}` },
+        currentUser
+      });
     } catch (err) {
       console.error("Update Error:", err);
     }
@@ -176,6 +203,14 @@ export default function CasePlanEditor({ participant }: { participant: Participa
       await updateDoc(doc(db, 'participants', participant.id), {
         notes,
         updatedAt: serverTimestamp()
+      });
+      logAuditEvent({
+        participantId: participant.id,
+        caseManagerUid: participant.uid,
+        category: 'observation_updated',
+        description: 'Observations Updated',
+        details: { newValue: notes },
+        currentUser
       });
     } catch (err) {
       console.error("Save Error:", err);
@@ -203,11 +238,11 @@ export default function CasePlanEditor({ participant }: { participant: Participa
                     id={domainId} 
                     checked={isSelected}
                     onCheckedChange={() => handleToggleIrasDomain(domain)}
-                    className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                    className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-burnt-peach-600 data-[state=checked]:border-burnt-peach-600"
                   />
                   <Label 
                     htmlFor={domainId}
-                    className={`text-sm font-medium cursor-pointer transition-colors ${isSelected ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
+                    className={`text-sm font-medium cursor-pointer transition-colors ${isSelected ? 'text-burnt-peach-700 dark:text-burnt-peach-400' : 'text-slate-500 dark:text-slate-400'}`}
                   >
                     {domain}
                   </Label>
@@ -234,11 +269,11 @@ export default function CasePlanEditor({ participant }: { participant: Participa
                   id={`phase-${phase}`} 
                   checked={isCompleted}
                   onCheckedChange={() => handleToggleMilestone(phaseKey)}
-                  className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+                  className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-burnt-peach-600 data-[state=checked]:border-burnt-peach-600"
                 />
                 <Label 
                   htmlFor={`phase-${phase}`}
-                  className={`text-sm font-medium cursor-pointer transition-colors ${isCompleted ? 'text-blue-700 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`}
+                  className={`text-sm font-medium cursor-pointer transition-colors ${isCompleted ? 'text-burnt-peach-700 dark:text-burnt-peach-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
                   Phase {phase}: {getPhaseName(phase)}
                 </Label>
@@ -269,26 +304,34 @@ export default function CasePlanEditor({ participant }: { participant: Participa
               variant="outline" 
               onClick={handleAIRefine} 
               disabled={isRefining || !notes.trim()}
-              className="text-blue-600 dark:text-blue-200 border-blue-200 dark:border-blue-900 hover:bg-blue-50 dark:hover:bg-blue-950/30"
+              className="text-burnt-peach-600 dark:text-burnt-peach-200 border-burnt-peach-200 dark:border-burnt-peach-900 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
               title="AI Refine"
             >
               {isRefining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
             </Button>
-            <Button size="sm" onClick={handleSaveNotes} disabled={saving} className="bg-blue-600 dark:bg-blue-500 text-white">
-              <Save className="w-4 h-4 mr-2" />
+            <Button size="sm" onClick={handleSaveNotes} disabled={saving} className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white">
+              <Save className="w-4 h-4" />
               {saving ? 'Saving...' : 'Save'}
             </Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="relative">
-            <Textarea 
+            <Textarea
               ref={textareaRef}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Enter detailed notes about the participant's progress, challenges, and court appearances..."
-              className="min-h-[150px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus-visible:ring-blue-500 pr-10 resize-none overflow-hidden"
+              className="min-h-[150px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus-visible:ring-burnt-peach-500 pr-10 resize-none overflow-hidden"
             />
+            {isRefining && (
+              <div className="absolute inset-0 bg-white/70 dark:bg-slate-950/70 rounded-md flex items-start justify-center pt-6 z-10 pointer-events-none">
+                <div className="flex items-center gap-2 text-xs font-bold text-burnt-peach-600 dark:text-burnt-peach-400 animate-pulse bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-burnt-peach-200 dark:border-burnt-peach-800 shadow-sm">
+                  <Sparkles className="w-3 h-3" />
+                  AI is refining...
+                </div>
+              </div>
+            )}
             {isListening && (
               <div className="absolute bottom-3 right-3 flex items-center gap-2 text-[10px] font-bold text-red-500 animate-pulse bg-white/80 dark:bg-slate-900/80 px-2 py-1 rounded-full border border-red-100 dark:border-red-900/50">
                 <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>

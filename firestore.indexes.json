@@ -1,0 +1,14 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "auditLog",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "caseManagerUid", "order": "ASCENDING" },
+        { "fieldPath": "participantId", "order": "ASCENDING" },
+        { "fieldPath": "timestamp", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}
