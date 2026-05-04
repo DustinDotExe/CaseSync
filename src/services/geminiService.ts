@@ -1,54 +1,48 @@
-import { GoogleGenAI, ThinkingLevel } from "@google/genai";
-
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
-
-export async function* refineGoalStream(roughNotes: string) {
-  const model = "gemini-3.1-flash-lite-preview";
-  const prompt = `Refine the following rough notes into a SMART goal (Specific, Measurable, Achievable, Relevant, Time-bound) for a court participant's case plan. 
-  Notes: "${roughNotes}"`;
+async function* streamSSE(url: string, prompt: string): AsyncGenerator<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
 
   try {
-    const response = await ai.models.generateContentStream({
-      model,
-      contents: prompt,
-      config: {
-        systemInstruction: "You are an expert court case manager. Your task is to refine rough notes into a single SMART goal. Return only the refined goal text. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts.",
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
-      }
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+      signal: controller.signal,
     });
 
-    for await (const chunk of response) {
-      if (chunk.text) {
-        yield chunk.text;
+    if (!response.ok || !response.body) {
+      throw new Error(`Request failed: ${response.status}`);
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop()!;
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(data);
+          if (typeof parsed === 'string') yield parsed;
+        } catch { /* skip malformed chunks */ }
       }
     }
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    throw error;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
+export async function* refineGoalStream(roughNotes: string) {
+  yield* streamSSE('/api/refine-goal', roughNotes);
+}
+
 export async function* refineNotesStream(notes: string) {
-  const model = "gemini-3.1-flash-lite-preview";
-  const prompt = notes;
-
-  try {
-    const response = await ai.models.generateContentStream({
-      model,
-      contents: prompt,
-      config: {
-        systemInstruction: "You are an expert court case manager. Your task is to refine case note information. Rewrite these case notes into clear, professional plain language. The goal is a formal record that is easily understood by the defendant. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts.",
-        thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL }
-      }
-    });
-
-    for await (const chunk of response) {
-      if (chunk.text) {
-        yield chunk.text;
-      }
-    }
-  } catch (error) {
-    console.error("Gemini Error:", error);
-    throw error;
-  }
+  yield* streamSSE('/api/refine-notes', notes);
 }

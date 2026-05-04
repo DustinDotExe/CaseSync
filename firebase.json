@@ -1,0 +1,8 @@
+{
+  "firestore": {
+    "database": "VITE_FIREBASE_FIRESTORE_DATABASE_ID_REMOVED",
+    "location": "us-west2",
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  }
+}
