@@ -364,14 +364,13 @@ export default function UserSettings({
 
           {/* ── Session ──────────────────────────────────────────────────── */}
           <div>
-            <SectionHeader id="session" icon={LogOut} label="Session" />
-            {expanded.session && (
-              <div className="pb-5">
-                <Button variant="ghost" onClick={() => signOut(auth)} className="w-full justify-start text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 font-bold rounded-xl">
-                  <LogOut className="w-4 h-4" /> Sign Out
-                </Button>
-              </div>
-            )}
+            <button
+              onClick={() => signOut(auth)}
+              className="w-full flex items-center gap-2 py-3 text-left group"
+            >
+              <LogOut className="w-4 h-4 text-burnt-peach-600" />
+              <span className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">Sign Out</span>
+            </button>
           </div>
 
         </div>

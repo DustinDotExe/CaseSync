@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { Plus, User, FileText, Scale, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings } from 'lucide-react';
+import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight } from 'lucide-react';
 import { 
   Sheet, 
   SheetContent, 
@@ -26,6 +26,7 @@ import AIGoalRefiner, { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefi
 import CourtReport from './components/CourtReport';
 import AuditLog from './components/AuditLog';
 import UserSettings from './components/UserSettings';
+import CaseSyncLogo from './components/CaseSyncLogo';
 import { cn } from './lib/utils';
 
 export default function App() {
@@ -33,6 +34,7 @@ export default function App() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newParticipant, setNewParticipant] = useState({ name: '', caseNumber: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
@@ -50,7 +52,7 @@ export default function App() {
   });
   const [paletteColor, setPaletteColor] = useState<'orange' | 'blue' | 'red' | 'green'>(() => {
     const stored = localStorage.getItem('paletteColor') as 'orange' | 'blue' | 'red' | 'green' | null;
-    return stored || 'orange';
+    return stored || 'blue';
   });
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -379,6 +381,11 @@ export default function App() {
     </div>
   );
 
+  const startAddingParticipant = () => {
+    setIsAdding(true);
+    setSidebarOpen(true);
+  };
+
   if (loading) return (
     <div className="h-screen w-screen flex flex-col bg-slate-50">
       <div className="h-safe-top bg-white w-full shrink-0"></div>
@@ -397,31 +404,29 @@ export default function App() {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-slate-200">
           <div className="flex items-center gap-3 mb-8 justify-center">
-          <div className="bg-burnt-peach-600 p-2.5 rounded-xl shadow-lg shadow-burnt-peach-200">
-            <Scale className="w-7 h-7 text-white" />
+            <CaseSyncLogo className="w-12 h-12 drop-shadow-lg" />
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">CaseSync</h1>
           </div>
-          <h1 className="text-3xl font-black text-slate-900 tracking-tight">CaseSync</h1>
-        </div>
-        <div className="space-y-2 text-center mb-10">
-          <h2 className="text-xl font-bold text-slate-800">Welcome Back</h2>
-          <p className="text-slate-500 text-sm leading-relaxed">
-            Sign in to begin building your case plans with ease. Currently in testing for Johnson County Problem Solving Courts.
+          <div className="space-y-2 text-center mb-10">
+            <h2 className="text-xl font-bold text-slate-800">Welcome Back</h2>
+            <p className="text-slate-500 text-sm leading-relaxed">
+              Sign in to begin building your case plans with ease. Currently in testing for Johnson County Problem Solving Courts.
+            </p>
+          </div>
+          <Button onClick={handleLogin} className="w-full bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-burnt-peach-100 transition-all active:scale-[0.98]">
+            Sign in with Google
+          </Button>
+          {loginError && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl text-center">
+              {loginError}
+            </div>
+          )}
+          <p className="mt-8 text-center text-xs text-slate-400">
+            Secure, encrypted access for authorized personnel only.
           </p>
         </div>
-        <Button onClick={handleLogin} className="w-full bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white h-14 text-lg font-bold rounded-xl shadow-lg shadow-burnt-peach-100 transition-all active:scale-[0.98]">
-          Sign in with Google
-        </Button>
-        {loginError && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-xl text-center">
-            {loginError}
-          </div>
-        )}
-        <p className="mt-8 text-center text-xs text-slate-400">
-          Secure, encrypted access for authorized personnel only.
-        </p>
       </div>
     </div>
-  </div>
   );
 
   return (
@@ -430,14 +435,14 @@ export default function App() {
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between z-20 shadow-sm">
         <div className="flex items-center gap-3">
-          <Sheet>
+          <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden text-slate-500" />}>
               <Menu className="w-5 h-5" />
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
               <SheetHeader className="p-6 border-b border-slate-100 dark:border-slate-800">
                 <SheetTitle className="flex items-center gap-2">
-                  <Scale className="w-5 h-5 text-burnt-peach-600" />
+                  <CaseSyncLogo className="w-6 h-6" />
                   <span className="font-black tracking-tight">CaseSync</span>
                 </SheetTitle>
               </SheetHeader>
@@ -445,9 +450,7 @@ export default function App() {
             </SheetContent>
           </Sheet>
 
-          <div className="bg-burnt-peach-600 p-2 rounded-lg shadow-md shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 hidden md:block">
-            <Scale className="w-5 h-5 text-white" />
-          </div>
+          <CaseSyncLogo className="w-9 h-9 drop-shadow-md hidden md:block" />
           <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CaseSync</h1>
           <Badge variant="outline" className="hidden sm:inline-flex ml-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 font-mono text-[10px]">v1.0.0</Badge>
         </div>
@@ -628,18 +631,40 @@ export default function App() {
               </Tabs>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-slate-400 p-10">
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-burnt-peach-100 dark:bg-burnt-peach-900/20 rounded-full blur-3xl opacity-30 animate-pulse"></div>
-                <div className="relative bg-burnt-peach-600 p-10 rounded-[2.5rem]">
-                  <Scale className="w-20 h-20 text-white" />
-                </div>
+            <div className="h-full flex flex-col items-center justify-center p-10">
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-burnt-peach-100 dark:bg-burnt-peach-900/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
+                <CaseSyncLogo className="relative w-28 h-28 drop-shadow-xl" />
               </div>
-              <div className="text-center max-w-sm space-y-3">
-                <h3 className="text-2xl font-black text-slate-800 dark:text-white tracking-tight">CaseSync</h3>
-                <p className="text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                  Select a participant from the sidebar to begin managing their milestones, goals, and court documentation.
-                </p>
+              <div className="text-center max-w-md space-y-4">
+                <div>
+                  <h3 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Welcome to CaseSync</h3>
+                  <p className="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed">
+                    Create or select a participant from the sidebar to begin managing their milestones, goals, and court documentation.
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-center items-center gap-1 py-1">
+                  {["Goals", "Case Plans", "Milestones", "Audit Logs"].map((feature, i, arr) => (
+                    <>
+                      <span
+                        key={feature}
+                        className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
+                      >
+                        {feature}
+                      </span>
+                      {i < arr.length - 1 && (
+                        <ChevronRight key={`arrow-${i}`} className="w-3 h-3 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+                      )}
+                    </>
+                  ))}
+                </div>
+                <Button
+                  onClick={startAddingParticipant}
+                  className="bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-bold rounded-xl shadow-lg shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 px-6"
+                >
+                  <Plus className="w-4 h-4" />
+                  Create Participant
+                </Button>
               </div>
             </div>
           )}

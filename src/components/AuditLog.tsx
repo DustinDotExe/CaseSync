@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { auth } from '../firebase';
 import { Participant, AuditLogEntry, AuditCategory } from '../types';
 import { subscribeToAuditLog, deleteAuditEntry, updateAuditEntry } from '../services/auditService';
+import { hearingBriefStream } from '../services/geminiService';
 import { Card, CardContent, CardHeader } from './ui/card';
-import { ScrollArea } from './ui/scroll-area';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
@@ -11,8 +11,59 @@ import { Separator } from './ui/separator';
 import {
   Plus, Trash2, Pencil, Target, CheckCircle, Circle,
   FileText, LayoutDashboard, ArrowRight, Clock, User, History, Loader2, X, Check,
-  Scale, Printer
+  Printer, RefreshCw
 } from 'lucide-react';
+import CaseSyncLogo from './CaseSyncLogo';
+
+const PHASE_NAMES = ['', 'Orientation', 'Active Treatment', 'Relapse Prevention', 'Community Reintegration', 'Commencement Preparation'];
+
+function buildHearingBriefPrompt(participant: Participant, entries: AuditLogEntry[]): string {
+  const lines: string[] = [
+    `Participant: ${participant.name}`,
+    `Case Number: ${participant.caseNumber}`,
+    `Current Phase: ${participant.currentPhase} – ${PHASE_NAMES[participant.currentPhase] ?? ''}`,
+    '',
+  ];
+
+  if (participant.irasDomains?.length) {
+    lines.push(`Treatment Areas (IRAS): ${participant.irasDomains.join(', ')}`);
+    lines.push('');
+  }
+
+  if (participant.goals?.length) {
+    lines.push('Active Goals:');
+    participant.goals.forEach(g => lines.push(`- ${g}`));
+    lines.push('');
+  }
+
+  if (participant.completedGoals?.length) {
+    lines.push('Completed Goals:');
+    participant.completedGoals.forEach(g => lines.push(`- ${g}`));
+    lines.push('');
+  }
+
+  if (participant.notes?.trim()) {
+    lines.push('Case Manager Observations:');
+    lines.push(participant.notes.trim());
+    lines.push('');
+  }
+
+  const recent = entries.slice(0, 20);
+  if (recent.length) {
+    lines.push('Recent Activity (newest first):');
+    recent.forEach(e => {
+      const dateStr = e.timestamp?.toDate
+        ? e.timestamp.toDate().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+        : 'Recent';
+      const detail = e.details?.newValue ? `: ${e.details.newValue.slice(0, 120)}` : '';
+      lines.push(`- [${dateStr}] ${e.description}${detail}`);
+    });
+    lines.push('');
+  }
+
+  lines.push('Based on the above case data, write a history summary for the judge.');
+  return lines.join('\n');
+}
 
 type FilterKey = 'completed_goals' | 'all_goals' | 'milestones' | 'observations' | 'profile' | 'all';
 
@@ -101,6 +152,28 @@ export default function AuditLog({ participant }: { participant: Participant }) 
 
   // error banner
   const [error, setError] = useState<string | null>(null);
+
+  // history summary
+  const [briefText, setBriefText] = useState('');
+  const [briefStreaming, setBriefStreaming] = useState(false);
+  const [briefError, setBriefError] = useState<string | null>(null);
+  const [briefVisible, setBriefVisible] = useState(false);
+
+  const generateBrief = async () => {
+    setBriefText('');
+    setBriefError(null);
+    setBriefVisible(true);
+    setBriefStreaming(true);
+    try {
+      for await (const chunk of hearingBriefStream(buildHearingBriefPrompt(participant, entries))) {
+        setBriefText(prev => prev + chunk);
+      }
+    } catch (err: any) {
+      setBriefError(`Failed to generate brief: ${err?.message ?? 'unknown error'}`);
+    } finally {
+      setBriefStreaming(false);
+    }
+  };
 
   useEffect(() => {
     setLoading(true);
@@ -201,9 +274,20 @@ export default function AuditLog({ participant }: { participant: Participant }) 
               Created on {new Date().toLocaleDateString()}
             </p>
           </div>
-          <div className="hidden sm:flex bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white px-4 py-2 rounded-lg font-bold text-lg md:text-xl items-center gap-2">
-            <Scale className="w-5 h-5" />
-            CaseSync
+          <div className="flex items-center gap-3 shrink-0">
+            <Button
+              size="sm"
+              onClick={generateBrief}
+              disabled={briefStreaming || loading}
+              className="no-print h-8 text-xs font-semibold bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white shadow-sm gap-1.5"
+            >
+              {briefStreaming && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+              History Summary
+            </Button>
+            <div className="hidden sm:flex items-center gap-2 font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100">
+              <CaseSyncLogo className="w-8 h-8" />
+              <span>CaseSync</span>
+            </div>
           </div>
         </div>
 
@@ -222,6 +306,41 @@ export default function AuditLog({ participant }: { participant: Participant }) 
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.caseNumber}</p>
           </div>
         </section>
+
+        {briefVisible && (
+          <div className="rounded-lg border border-burnt-peach-200 dark:border-burnt-peach-800/60 bg-burnt-peach-50 dark:bg-burnt-peach-950/20 p-4 space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-black text-burnt-peach-700 dark:text-burnt-peach-400 uppercase tracking-widest">
+                History Summary
+              </div>
+              <div className="no-print flex items-center gap-1">
+                <button
+                  onClick={generateBrief}
+                  disabled={briefStreaming}
+                  title="Regenerate"
+                  className="p-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setBriefVisible(false)}
+                  title="Dismiss"
+                  className="p-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            {briefError ? (
+              <p className="text-xs text-red-600 dark:text-red-400">{briefError}</p>
+            ) : (
+              <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                {briefText}
+                {briefStreaming && <span className="inline-block w-1.5 h-4 ml-0.5 bg-burnt-peach-400 animate-pulse rounded-sm align-middle" />}
+              </p>
+            )}
+          </div>
+        )}
 
         <Separator className="bg-slate-100 dark:bg-slate-800" />
 

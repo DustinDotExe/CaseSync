@@ -1,6 +1,6 @@
 async function* streamSSE(url: string, prompt: string): AsyncGenerator<string> {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 30000);
+  const timeout = setTimeout(() => controller.abort(), 60000);
 
   try {
     const response = await fetch(url, {
@@ -28,10 +28,16 @@ async function* streamSSE(url: string, prompt: string): AsyncGenerator<string> {
         if (!line.startsWith('data: ')) continue;
         const data = line.slice(6).trim();
         if (data === '[DONE]') return;
+        let parsed: unknown;
         try {
-          const parsed = JSON.parse(data);
-          if (typeof parsed === 'string') yield parsed;
-        } catch { /* skip malformed chunks */ }
+          parsed = JSON.parse(data);
+        } catch {
+          continue;
+        }
+        if (typeof parsed === 'string') yield parsed;
+        if (parsed && typeof parsed === 'object' && 'error' in parsed) {
+          throw new Error(String(parsed.error));
+        }
       }
     }
   } finally {
@@ -45,4 +51,8 @@ export async function* refineGoalStream(roughNotes: string) {
 
 export async function* refineNotesStream(notes: string) {
   yield* streamSSE('/api/refine-notes', notes);
+}
+
+export async function* hearingBriefStream(prompt: string) {
+  yield* streamSSE('/api/hearing-brief', prompt);
 }

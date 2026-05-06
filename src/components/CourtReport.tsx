@@ -9,7 +9,8 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
-import { Printer, FileText, Target, LayoutDashboard, Scale } from 'lucide-react';
+import { Printer, FileText, Target, LayoutDashboard } from 'lucide-react';
+import CaseSyncLogo from './CaseSyncLogo';
 
 export default function CourtReport({ participant, currentUser }: { participant: Participant; currentUser: CurrentUser }) {
   const reportRef = useRef<HTMLDivElement>(null);
@@ -39,9 +40,9 @@ export default function CourtReport({ participant, currentUser }: { participant:
               <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{participant.name} / Case Plan</h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Created on {new Date().toLocaleDateString()}</p>
             </div>
-            <div className="hidden sm:flex bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white px-4 py-2 rounded-lg font-bold text-lg md:text-xl items-center gap-2">
-              <Scale className="w-5 h-5" />
-              CaseSync
+            <div className="hidden sm:flex items-center gap-2 font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100">
+              <CaseSyncLogo className="w-8 h-8" />
+              <span>CaseSync</span>
             </div>
           </div>
         </CardHeader>
