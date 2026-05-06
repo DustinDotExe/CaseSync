@@ -675,31 +675,33 @@ export default function App() {
               <div className="text-center max-w-md space-y-4">
                 <div>
                   <h3 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Welcome to CasePlanr</h3>
-                  <p className="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed">
-                    Create or select a participant from the sidebar to begin managing their milestones, goals, and court documentation.
-                  </p>
                 </div>
-                <div className="flex flex-wrap justify-center items-center gap-1 py-1">
+                <div className="hidden sm:flex flex-wrap justify-center items-center gap-y-1.5 py-1">
                   {["Goals", "Case Plans", "Milestones", "Audit Logs"].map((feature, i, arr) => (
-                    <>
-                      <span
-                        key={feature}
-                        className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700"
-                      >
+                    <span key={feature} className="inline-flex items-center gap-1 whitespace-nowrap">
+                      <span className="px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
                         {feature}
                       </span>
                       {i < arr.length - 1 && (
-                        <ChevronRight key={`arrow-${i}`} className="w-3 h-3 text-slate-300 dark:text-slate-600 flex-shrink-0" />
+                        <ChevronRight className="w-3 h-3 text-slate-300 dark:text-slate-600 flex-shrink-0" />
                       )}
-                    </>
+                    </span>
                   ))}
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Select a participant from the sidebar to begin managing their milestones, goals, and court documentation.
+                </p>
+                <div className="flex items-center gap-3 w-full">
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
+                  <span className="text-xs font-black text-slate-800 dark:text-white tracking-tight">OR:</span>
+                  <div className="flex-1 h-px bg-slate-200 dark:bg-slate-800"></div>
                 </div>
                 <Button
                   onClick={startAddingParticipant}
                   className="bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-bold rounded-xl shadow-lg shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 px-6"
                 >
                   <Plus className="w-4 h-4" />
-                  Create Participant
+                  Create New Case Plan
                 </Button>
               </div>
             </div>
