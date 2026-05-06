@@ -1,16 +1,30 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { db } from '../firebase';
-import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
-import { Participant, CurrentUser, StoredTemplateCategory } from '../types';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { Participant, CurrentUser, StoredTemplateCategory, GoalEntry } from '../types';
 import { logAuditEvent } from '../services/auditService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { ScrollArea } from './ui/scroll-area';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
-import { Sparkles, Plus, Trash2, CheckCircle, Loader2, Pencil, Check, X, BookOpen, ChevronDown, ChevronUp, Pill, Briefcase, Home, Users, Brain, Scale, Heart, DollarSign, Activity, GripVertical } from 'lucide-react';
+import { Wand2, Plus, Trash2, CheckCircle, Loader2, Pencil, Check, X, BookOpen, ChevronDown, ChevronUp, Pill, Briefcase, Home, Users, Brain, Scale, Heart, DollarSign, Activity, GripVertical, CalendarDays, CalendarCheck } from 'lucide-react';
+import { DatePicker } from './ui/date-picker';
 import { refineGoalStream } from '../services/geminiService';
+
+function formatGoalDate(iso: string): string {
+  return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function isOverdue(iso: string): boolean {
+  return new Date(iso + 'T23:59:59') < new Date();
+}
+
+function isDueSoon(iso: string): boolean {
+  const due = new Date(iso + 'T23:59:59');
+  const now = new Date();
+  return due > now && due <= new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+}
+
 
 interface GoalTemplate {
   label: string;
@@ -210,10 +224,14 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
   const [roughNotes, setRoughNotes] = useState('');
   const [refinedGoal, setRefinedGoal] = useState('');
   const [loading, setLoading] = useState(false);
-  const [editingGoalIdx, setEditingGoalIdx] = useState<number | null>(null);
+  const [editingGoalId, setEditingGoalId] = useState<string | null>(null);
   const [editingGoalValue, setEditingGoalValue] = useState('');
+  const [editingGoalDueDate, setEditingGoalDueDate] = useState('');
+  const [pendingGoalText, setPendingGoalText] = useState<string | null>(null);
+  const [pendingDueDate, setPendingDueDate] = useState('');
   const [showTemplates, setShowTemplates] = useState(false);
   const [activeDomain, setActiveDomain] = useState<string | null>(null);
+  const templatesRef = useRef<HTMLDivElement>(null);
 
   const effectiveTemplates = (goalTemplates ?? DEFAULT_STORED_TEMPLATES).map(cat => ({
     ...cat,
@@ -241,11 +259,21 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
     }
   };
 
-  const handleAddGoal = async () => {
+  const handleAddGoal = () => {
     if (!refinedGoal) return;
+    setPendingGoalText(refinedGoal);
+  };
+
+  const commitAddGoal = async () => {
+    if (!pendingGoalText) return;
+    const entry: GoalEntry = {
+      id: crypto.randomUUID(),
+      text: pendingGoalText,
+      ...(pendingDueDate ? { dueDate: pendingDueDate } : {}),
+    };
     try {
       await updateDoc(doc(db, 'participants', participant.id), {
-        goals: arrayUnion(refinedGoal),
+        goals: [...participant.goals, entry],
         updatedAt: serverTimestamp()
       });
       logAuditEvent({
@@ -253,21 +281,26 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
         caseManagerUid: participant.uid,
         category: 'goal_added',
         description: 'Goal Added',
-        details: { newValue: refinedGoal.length > 120 ? refinedGoal.slice(0, 120) + '…' : refinedGoal },
+        details: { newValue: entry.text.length > 120 ? entry.text.slice(0, 120) + '…' : entry.text },
         currentUser
       });
-      setRefinedGoal('');
+      setPendingGoalText(null);
+      setPendingDueDate('');
       setRoughNotes('');
+      setRefinedGoal('');
     } catch (err) {
       console.error("Add Goal Error:", err);
     }
   };
 
-  const handleDeleteGoal = async (goalToDelete: string) => {
+  const handleDeleteGoal = async (goalId: string) => {
+    const goalToDelete = participant.goals.find(g => g.id === goalId);
     try {
-      const newGoals = participant.goals.filter(g => g !== goalToDelete);
+      const newGoals = participant.goals.filter(g => g.id !== goalId);
+      const newCompleted = (participant.completedGoals ?? []).filter(id => id !== goalId);
       await updateDoc(doc(db, 'participants', participant.id), {
         goals: newGoals,
+        completedGoals: newCompleted,
         updatedAt: serverTimestamp()
       });
       logAuditEvent({
@@ -275,7 +308,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
         caseManagerUid: participant.uid,
         category: 'goal_deleted',
         description: 'Goal Removed',
-        details: { oldValue: goalToDelete.length > 120 ? goalToDelete.slice(0, 120) + '…' : goalToDelete },
+        details: { oldValue: goalToDelete ? (goalToDelete.text.length > 120 ? goalToDelete.text.slice(0, 120) + '…' : goalToDelete.text) : '' },
         currentUser
       });
     } catch (err) {
@@ -283,12 +316,15 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
     }
   };
 
-  const handleUpdateGoal = async (idx: number) => {
+  const handleUpdateGoal = async (goalId: string) => {
     if (!editingGoalValue.trim()) return;
-    const oldGoal = participant.goals[idx];
+    const oldGoal = participant.goals.find(g => g.id === goalId);
     try {
-      const newGoals = [...participant.goals];
-      newGoals[idx] = editingGoalValue.trim();
+      const newGoals = participant.goals.map(g =>
+        g.id === goalId
+          ? { ...g, text: editingGoalValue.trim(), dueDate: editingGoalDueDate || undefined }
+          : g
+      );
       await updateDoc(doc(db, 'participants', participant.id), {
         goals: newGoals,
         updatedAt: serverTimestamp()
@@ -299,12 +335,12 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
         category: 'goal_edited',
         description: 'Goal Edited',
         details: {
-          oldValue: oldGoal.length > 80 ? oldGoal.slice(0, 80) + '…' : oldGoal,
+          oldValue: oldGoal ? (oldGoal.text.length > 80 ? oldGoal.text.slice(0, 80) + '…' : oldGoal.text) : '',
           newValue: editingGoalValue.length > 80 ? editingGoalValue.slice(0, 80) + '…' : editingGoalValue
         },
         currentUser
       });
-      setEditingGoalIdx(null);
+      setEditingGoalId(null);
     } catch (err) {
       console.error("Update Goal Error:", err);
     }
@@ -321,12 +357,14 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
     });
   };
 
-  const startEditingGoal = (idx: number, value: string) => {
-    setEditingGoalIdx(idx);
-    setEditingGoalValue(value);
+  const startEditingGoal = (goal: GoalEntry) => {
+    setEditingGoalId(goal.id);
+    setEditingGoalValue(goal.text);
+    setEditingGoalDueDate(goal.dueDate ?? '');
   };
 
   return (
+    <>
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
       <div className="space-y-6">
         <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
@@ -341,7 +379,21 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setShowTemplates(v => !v)}
+                onClick={() => {
+                  const opening = !showTemplates;
+                  setShowTemplates(opening);
+                  if (opening) {
+                    setTimeout(() => {
+                      if (templatesRef.current) {
+                        const rect = templatesRef.current.getBoundingClientRect();
+                        const scrollEl = templatesRef.current.closest('.overflow-y-auto');
+                        if (scrollEl) {
+                          scrollEl.scrollBy({ top: rect.top - 80, behavior: 'smooth' });
+                        }
+                      }
+                    }, 50);
+                  }
+                }}
                 className="shrink-0 text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-200 dark:border-burnt-peach-800 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 gap-1.5"
               >
                 <BookOpen className="w-3.5 h-3.5" />
@@ -352,8 +404,8 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
           </CardHeader>
           <CardContent className="space-y-4">
             {showTemplates && (
-              <div className="rounded-xl border border-burnt-peach-100 dark:border-burnt-peach-900/50 bg-burnt-peach-50/50 dark:bg-burnt-peach-950/20 p-3 animate-in slide-in-from-top-2 duration-200">
-                <p className="text-[10px] font-black uppercase tracking-widest text-burnt-peach-600 dark:text-burnt-peach-400 mb-3">
+              <div ref={templatesRef} className="rounded-xl border border-burnt-peach-100 dark:border-burnt-peach-900/50 bg-burnt-peach-50/50 dark:bg-burnt-peach-950/20 p-3 animate-in slide-in-from-top-2 duration-200">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-burnt-peach-600 dark:text-burnt-peach-400 mb-3">
                   Select a template to pre-fill your notes
                 </p>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
@@ -396,19 +448,8 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
               className="min-h-[120px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200"
             />
             <div className="flex flex-col gap-2">
-              <Button 
-                onClick={async () => {
-                  if (!roughNotes.trim()) return;
-                  try {
-                    await updateDoc(doc(db, 'participants', participant.id), {
-                      goals: arrayUnion(roughNotes.trim()),
-                      updatedAt: serverTimestamp()
-                    });
-                    setRoughNotes('');
-                  } catch (err) {
-                    console.error("Direct Add Goal Error:", err);
-                  }
-                }}
+              <Button
+                onClick={() => { if (roughNotes.trim()) setPendingGoalText(roughNotes.trim()); }}
                 disabled={loading || !roughNotes.trim()}
                 className="w-full bg-burnt-peach-600 dark:bg-burnt-peach-500 hover:bg-burnt-peach-700 dark:hover:bg-burnt-peach-600 text-white"
               >
@@ -427,8 +468,8 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    Generate SMART Goal
+                    <Wand2 className="w-4 h-4" />
+                    Refine Goal
                   </span>
                 )}
               </Button>
@@ -473,7 +514,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
           <CardDescription className="text-slate-500 dark:text-slate-400">Current objectives for this participant.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ScrollArea className="h-[400px] pr-4">
+          <div className="pr-4">
             {participant.goals.length === 0 ? (
               <div className="text-center py-12 text-slate-400 dark:text-slate-600">
                 <CheckCircle className="w-8 h-8 mx-auto mb-2 opacity-20" />
@@ -485,14 +526,14 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                   {(provided) => (
                     <div className="space-y-4" ref={provided.innerRef} {...provided.droppableProps}>
                       {participant.goals.map((goal, idx) => (
-                        <Draggable key={goal + idx} draggableId={`goal-${idx}`} index={idx} isDragDisabled={editingGoalIdx === idx}>
+                        <Draggable key={goal.id} draggableId={goal.id} index={idx} isDragDisabled={editingGoalId === goal.id}>
                           {(drag, snapshot) => (
                             <div
                               ref={drag.innerRef}
                               {...drag.draggableProps}
                               className={`p-4 bg-white dark:bg-slate-950 border rounded-lg shadow-sm flex flex-col gap-4 group transition-shadow ${snapshot.isDragging ? 'border-burnt-peach-300 dark:border-burnt-peach-700 shadow-lg' : 'border-slate-100 dark:border-slate-800'}`}
                             >
-                              {editingGoalIdx === idx ? (
+                              {editingGoalId === goal.id ? (
                                 <div className="space-y-3">
                                   <Textarea
                                     value={editingGoalValue}
@@ -500,11 +541,22 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                                     className="min-h-[100px] text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-800 focus-visible:ring-burnt-peach-500"
                                     autoFocus
                                   />
+                                  <div className="space-y-1">
+                                    <label className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                                      <CalendarDays className="w-3 h-3" /> Due Date
+                                    </label>
+                                    <DatePicker
+                                      value={editingGoalDueDate}
+                                      onChange={setEditingGoalDueDate}
+                                      placeholder="No due date"
+                                      phaseUpDate={participant.phaseUpdate}
+                                    />
+                                  </div>
                                   <div className="flex justify-end gap-2">
                                     <Button
                                       size="sm"
                                       variant="ghost"
-                                      onClick={() => setEditingGoalIdx(null)}
+                                      onClick={() => setEditingGoalId(null)}
                                       className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
                                     >
                                       <X className="w-4 h-4" />
@@ -512,7 +564,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                                     </Button>
                                     <Button
                                       size="sm"
-                                      onClick={() => handleUpdateGoal(idx)}
+                                      onClick={() => handleUpdateGoal(goal.id)}
                                       className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white"
                                     >
                                       <Check className="w-4 h-4" />
@@ -521,16 +573,40 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                                   </div>
                                 </div>
                               ) : (
-                                <div className="flex items-center gap-2">
-                                  <div {...drag.dragHandleProps} className="cursor-grab active:cursor-grabbing text-slate-300 dark:text-slate-600 hover:text-slate-400 dark:hover:text-slate-500 shrink-0">
+                                <div className="flex items-start gap-2">
+                                  <div {...drag.dragHandleProps} className="cursor-grab active:cursor-grabbing text-slate-300 dark:text-slate-600 hover:text-slate-400 dark:hover:text-slate-500 shrink-0 self-center">
                                     <GripVertical className="w-4 h-4" />
                                   </div>
-                                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed flex-1">{goal}</p>
-                                  <div className="flex flex-col gap-1">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{goal.text}</p>
+                                    {(goal.dueDate || goal.reviewedOn) && (
+                                      <div className="flex flex-wrap items-center gap-3 mt-1.5">
+                                        {goal.dueDate && (
+                                          <span className={`inline-flex items-center gap-1 text-[10px] font-semibold ${isOverdue(goal.dueDate) ? 'text-red-500 dark:text-red-400' : isDueSoon(goal.dueDate) ? 'text-amber-600 dark:text-amber-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                                            <CalendarDays className="w-3 h-3 shrink-0" />
+                                            Due: {formatGoalDate(goal.dueDate)}
+                                            {isOverdue(goal.dueDate) && (
+                                              <span className="ml-0.5 px-1 rounded bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 font-bold uppercase text-[10px]">Overdue</span>
+                                            )}
+                                            {isDueSoon(goal.dueDate) && (
+                                              <span className="ml-0.5 px-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 font-bold uppercase text-[10px]">Due Soon</span>
+                                            )}
+                                          </span>
+                                        )}
+                                        {goal.reviewedOn && (
+                                          <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                                            <CalendarCheck className="w-3 h-3 shrink-0" />
+                                            Reviewed: {formatGoalDate(goal.reviewedOn)}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 shrink-0">
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => startEditingGoal(idx, goal)}
+                                      onClick={() => startEditingGoal(goal)}
                                       className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
                                     >
                                       <Pencil className="w-4 h-4" />
@@ -538,7 +614,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      onClick={() => handleDeleteGoal(goal)}
+                                      onClick={() => handleDeleteGoal(goal.id)}
                                       className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30"
                                     >
                                       <Trash2 className="w-4 h-4" />
@@ -556,9 +632,49 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                 </Droppable>
               </DragDropContext>
             )}
-          </ScrollArea>
+          </div>
         </CardContent>
       </Card>
     </div>
+
+    {pendingGoalText && (
+      <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-200">
+        <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl animate-in zoom-in-95 duration-200 p-6 space-y-5">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 tracking-tight">Set a Due Date</h3>
+            <p className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Optional — you can always update this later.</p>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800 rounded-lg px-3 py-2.5 border border-slate-100 dark:border-slate-700">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-3">{pendingGoalText}</p>
+          </div>
+
+          <DatePicker
+            value={pendingDueDate}
+            onChange={setPendingDueDate}
+            placeholder="Set due date (optional)"
+            phaseUpDate={participant.phaseUpdate}
+          />
+
+          <div className="flex gap-3 pt-1">
+            <Button
+              variant="ghost"
+              onClick={() => { setPendingGoalText(null); setPendingDueDate(''); }}
+              className="flex-1 text-slate-500 dark:text-slate-400"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={commitAddGoal}
+              className="flex-1 bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-bold"
+            >
+              <Plus className="w-4 h-4" />
+              Add to Case Plan
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

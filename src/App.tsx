@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight } from 'lucide-react';
+import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight, CalendarDays } from 'lucide-react';
 import { 
   Sheet, 
   SheetContent, 
@@ -20,13 +20,14 @@ import {
   SheetHeader,
   SheetTitle
 } from './components/ui/sheet';
-import { Participant, CurrentUser, StoredTemplateCategory } from './types';
+import { Participant, CurrentUser, StoredTemplateCategory, normalizeGoals } from './types';
 import CasePlanEditor from './components/CasePlanEditor';
 import AIGoalRefiner, { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefiner';
 import CourtReport from './components/CourtReport';
 import AuditLog from './components/AuditLog';
 import UserSettings from './components/UserSettings';
-import CaseSyncLogo from './components/CaseSyncLogo';
+import CasePlanrLogo from './components/CasePlanrLogo';
+import { DatePicker } from './components/ui/date-picker';
 import { cn } from './lib/utils';
 
 export default function App() {
@@ -126,7 +127,11 @@ export default function App() {
     if (user) {
       const q = query(collection(db, 'participants'), where('uid', '==', user.uid));
       const unsubscribe = onSnapshot(q, (snapshot) => {
-        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Participant));
+        const data = snapshot.docs.map(docSnap => {
+          const raw = { id: docSnap.id, ...docSnap.data() } as any;
+          const { goals, completedGoals } = normalizeGoals(raw.goals, raw.completedGoals);
+          return { ...raw, goals, completedGoals } as Participant;
+        });
         setParticipants(data);
       }, (err) => {
         console.error("Firestore Error:", err);
@@ -251,6 +256,26 @@ export default function App() {
     }
   };
   
+  const handlePhaseUpdateChange = async (date: string) => {
+    if (!selectedParticipant || !user) return;
+    try {
+      await updateDoc(doc(db, 'participants', selectedParticipant.id), {
+        phaseUpdate: date || null,
+        updatedAt: serverTimestamp()
+      });
+      logAuditEvent({
+        participantId: selectedParticipant.id,
+        caseManagerUid: user.uid,
+        category: 'participant_info_updated',
+        description: date ? 'Phase Up Date Set' : 'Phase Up Date Cleared',
+        details: { field: 'phaseUpdate', oldValue: selectedParticipant.phaseUpdate || '', newValue: date },
+        currentUser: { uid: user.uid, displayName: user.displayName, email: user.email }
+      });
+    } catch (err) {
+      console.error("Phase Update Error:", err);
+    }
+  };
+
   const handlePaletteChange = (color: 'orange' | 'blue' | 'red' | 'green') => {
     setPaletteColor(color);
     localStorage.setItem('paletteColor', color);
@@ -283,7 +308,7 @@ export default function App() {
     <div className="flex flex-col h-full">
       <div className="p-6 space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="font-black text-slate-800 dark:text-slate-200 uppercase tracking-wider text-xs">Participants</h2>
+          <h2 className="font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-xs">Participants</h2>
           <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-900/20 rounded-full">
             <Plus className="w-5 h-5" />
           </Button>
@@ -307,7 +332,7 @@ export default function App() {
               <CardContent className="p-4">
                 <form onSubmit={handleAddParticipant} className="space-y-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="name" className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-black tracking-widest">Full Name</Label>
+                    <Label htmlFor="name" className="text-[11px] uppercase text-slate-500 dark:text-slate-400 font-semibold tracking-wider">Full Name</Label>
                     <Input 
                       id="name" 
                       value={newParticipant.name} 
@@ -318,7 +343,7 @@ export default function App() {
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <Label htmlFor="case" className="text-[10px] uppercase text-slate-500 dark:text-slate-400 font-black tracking-widest">Case Number</Label>
+                    <Label htmlFor="case" className="text-[11px] uppercase text-slate-500 dark:text-slate-400 font-semibold tracking-wider">Case Number</Label>
                     <Input 
                       id="case" 
                       value={newParticipant.caseNumber} 
@@ -362,7 +387,7 @@ export default function App() {
                   selectedParticipantId === p.id ? "text-white" : "text-slate-800 dark:text-slate-200"
                 )}>{p.name}</span>
                 <Badge className={cn(
-                  "text-[9px] h-4 px-1.5 font-black uppercase tracking-tighter",
+                  "text-[10px] h-4 px-1.5 font-bold uppercase tracking-tight",
                   selectedParticipantId === p.id 
                     ? "bg-white/20 text-white border-white/20" 
                     : "bg-burnt-peach-50 dark:bg-burnt-peach-900/30 text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-100 dark:border-burnt-peach-900/50"
@@ -392,7 +417,7 @@ export default function App() {
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
           <div className="w-12 h-12 border-4 border-burnt-peach-200 border-t-burnt-peach-600 rounded-full animate-spin"></div>
-          <div className="text-slate-400 font-medium animate-pulse">Initializing CaseSync...</div>
+          <div className="text-slate-400 font-medium animate-pulse">Initializing CasePlanr...</div>
         </div>
       </div>
     </div>
@@ -404,8 +429,8 @@ export default function App() {
       <div className="flex-1 flex flex-col items-center justify-center p-4">
         <div className="max-w-md w-full bg-white p-10 rounded-3xl shadow-xl border border-slate-200">
           <div className="flex items-center gap-3 mb-8 justify-center">
-            <CaseSyncLogo className="w-12 h-12 drop-shadow-lg" />
-            <h1 className="text-3xl font-black text-slate-900 tracking-tight">CaseSync</h1>
+            <CasePlanrLogo className="w-12 h-12 drop-shadow-lg" />
+            <h1 className="text-3xl font-black text-slate-900 tracking-tight">CasePlanr</h1>
           </div>
           <div className="space-y-2 text-center mb-10">
             <h2 className="text-xl font-bold text-slate-800">Welcome Back</h2>
@@ -442,16 +467,16 @@ export default function App() {
             <SheetContent side="left" className="p-0 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800">
               <SheetHeader className="p-6 border-b border-slate-100 dark:border-slate-800">
                 <SheetTitle className="flex items-center gap-2">
-                  <CaseSyncLogo className="w-6 h-6" />
-                  <span className="font-black tracking-tight">CaseSync</span>
+                  <CasePlanrLogo className="w-6 h-6" />
+                  <span className="font-black tracking-tight">CasePlanr</span>
                 </SheetTitle>
               </SheetHeader>
               {renderSidebarContent()}
             </SheetContent>
           </Sheet>
 
-          <CaseSyncLogo className="w-9 h-9 drop-shadow-md hidden md:block" />
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CaseSync</h1>
+          <CasePlanrLogo className="w-9 h-9 drop-shadow-md hidden md:block" />
+          <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CasePlanr</h1>
           <Badge variant="outline" className="hidden sm:inline-flex ml-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 font-mono text-[10px]">v1.0.0</Badge>
         </div>
         
@@ -467,7 +492,7 @@ export default function App() {
           <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
           <div className="hidden md:flex flex-col items-end">
             <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.displayName}</span>
-            <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-widest font-bold">{userTitle}</span>
+            <span className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">{userTitle}</span>
           </div>
           <Button
             variant="ghost"
@@ -574,40 +599,51 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center gap-6">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest">Current Phase</p>
-                    <div className="flex items-center gap-2">
-                      <span className="text-2xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{selectedParticipant.currentPhase}</span>
-                      <span className="text-slate-300 dark:text-slate-700 font-bold">/ 5</span>
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+                  <div className="space-y-1 pr-3 sm:pr-5">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Current Phase</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{selectedParticipant.currentPhase}</span>
+                      <span className="text-slate-300 dark:text-slate-700 font-bold text-sm">/ 5</span>
                     </div>
                   </div>
-                  <div className="h-10 w-[1px] bg-slate-100 dark:bg-slate-800"></div>
-                  <div className="w-32 space-y-2">
-                    <div className="flex justify-between text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase">
-                      <span>Progress</span>
-                      <span>{Math.round((selectedParticipant.currentPhase / 5) * 100)}%</span>
+                  <div className="space-y-1 px-3 sm:px-5">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Progress</p>
+                    <div className="space-y-1">
+                      <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{Math.round((selectedParticipant.currentPhase / 5) * 100)}%</span>
+                      <Progress value={(selectedParticipant.currentPhase / 5) * 100} className="h-1.5 w-full max-w-[4rem] bg-slate-100 dark:bg-slate-800" />
                     </div>
-                    <Progress value={(selectedParticipant.currentPhase / 5) * 100} className="h-1.5 bg-slate-100 dark:bg-slate-800" />
+                  </div>
+                  <div className="space-y-1 pl-3 sm:pl-5">
+                    <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <CalendarDays className="w-3 h-3 shrink-0" /> Date
+                    </p>
+                    <DatePicker
+                      value={selectedParticipant.phaseUpdate || ''}
+                      onChange={handlePhaseUpdateChange}
+                      placeholder="—"
+                      showQuick={false}
+                      variant="inline"
+                    />
                   </div>
                 </div>
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 h-14 rounded-2xl shadow-sm inline-flex w-auto">
-                  <TabsTrigger value="plan" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-[3.5px] h-14 rounded-2xl shadow-sm inline-flex w-auto">
+                  <TabsTrigger value="plan" className="dark:data-active:bg-slate-800 dark:data-active:border-transparent dark:data-active:[box-shadow:inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.4)] px-4 md:px-8 rounded-xl font-bold transition-all">
                     <LayoutDashboard className="w-4 h-4" />
                     <span className="hidden md:inline">Overview</span>
                   </TabsTrigger>
-                  <TabsTrigger value="ai" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                  <TabsTrigger value="ai" className="dark:data-active:bg-slate-800 dark:data-active:border-transparent dark:data-active:[box-shadow:inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.4)] px-4 md:px-8 rounded-xl font-bold transition-all">
                     <Target className="w-4 h-4" />
                     <span className="hidden md:inline">Goals</span>
                   </TabsTrigger>
-                  <TabsTrigger value="report" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                  <TabsTrigger value="report" className="dark:data-active:bg-slate-800 dark:data-active:border-transparent dark:data-active:[box-shadow:inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.4)] px-4 md:px-8 rounded-xl font-bold transition-all">
                     <FileText className="w-4 h-4" />
                     <span className="hidden md:inline">Case Plan</span>
                   </TabsTrigger>
-                  <TabsTrigger value="history" className="data-[state=active]:bg-burnt-peach-600 dark:data-[state=active]:bg-burnt-peach-500 data-[state=active]:text-white px-4 md:px-8 rounded-xl font-bold transition-all">
+                  <TabsTrigger value="history" className="dark:data-active:bg-slate-800 dark:data-active:border-transparent dark:data-active:[box-shadow:inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.4)] px-4 md:px-8 rounded-xl font-bold transition-all">
                     <History className="w-4 h-4" />
                     <span className="hidden md:inline">History</span>
                   </TabsTrigger>
@@ -634,11 +670,11 @@ export default function App() {
             <div className="h-full flex flex-col items-center justify-center p-10">
               <div className="relative mb-6">
                 <div className="absolute inset-0 bg-burnt-peach-100 dark:bg-burnt-peach-900/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
-                <CaseSyncLogo className="relative w-28 h-28 drop-shadow-xl" />
+                <CasePlanrLogo className="relative w-28 h-28 drop-shadow-xl" />
               </div>
               <div className="text-center max-w-md space-y-4">
                 <div>
-                  <h3 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Welcome to CaseSync</h3>
+                  <h3 className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">Welcome to CasePlanr</h3>
                   <p className="mt-2 text-slate-500 dark:text-slate-400 leading-relaxed">
                     Create or select a participant from the sidebar to begin managing their milestones, goals, and court documentation.
                   </p>
@@ -680,7 +716,7 @@ export default function App() {
                 <Trash2 className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Delete Profile?</h3>
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">Delete Profile?</h3>
                 <p className="text-slate-500 dark:text-slate-400 font-medium">
                   Are you sure you want to delete <span className="text-slate-900 dark:text-white font-bold">{selectedParticipant?.name}</span>? 
                   This action is permanent and cannot be undone.

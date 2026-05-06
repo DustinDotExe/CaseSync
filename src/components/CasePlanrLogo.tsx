@@ -1,7 +1,7 @@
 import type { SVGProps } from 'react';
 import { cn } from '../lib/utils';
 
-export default function CaseSyncLogo({ className, ...props }: SVGProps<SVGSVGElement>) {
+export default function CasePlanrLogo({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"

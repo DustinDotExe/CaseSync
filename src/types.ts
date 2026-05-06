@@ -4,6 +4,37 @@ export interface CurrentUser {
   email: string | null;
 }
 
+export interface GoalEntry {
+  id: string;
+  text: string;
+  dueDate?: string;    // YYYY-MM-DD
+  reviewedOn?: string; // YYYY-MM-DD
+}
+
+function stableId(text: string): string {
+  let h = 5381;
+  for (let i = 0; i < text.length; i++) {
+    h = ((h << 5) + h) ^ text.charCodeAt(i);
+    h >>>= 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+export function normalizeGoals(
+  rawGoals: (string | GoalEntry)[] | undefined,
+  rawCompleted: string[] | undefined
+): { goals: GoalEntry[]; completedGoals: string[] } {
+  const goals: GoalEntry[] = (rawGoals ?? []).map((g) =>
+    typeof g === 'string' ? { id: stableId(g), text: g } : g
+  );
+  // Migrate completedGoals from text strings to IDs
+  const completedGoals = (rawCompleted ?? []).map((c) => {
+    const matchByText = goals.find((g) => g.text === c);
+    return matchByText ? matchByText.id : c;
+  });
+  return { goals, completedGoals };
+}
+
 export type AuditCategory =
   | 'participant_created'
   | 'participant_deleted'
@@ -50,11 +81,12 @@ export interface Participant {
   name: string;
   caseNumber: string;
   currentPhase: number;
-  goals: string[];
+  goals: GoalEntry[];
   notes: string;
   milestones: Milestones;
   irasDomains: string[];
-  completedGoals?: string[];
+  completedGoals?: string[]; // contains GoalEntry IDs
+  phaseUpdate?: string; // YYYY-MM-DD target date for phase advancement
   uid: string;
   createdAt: any;
   updatedAt: any;

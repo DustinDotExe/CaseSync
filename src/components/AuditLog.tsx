@@ -11,9 +11,9 @@ import { Separator } from './ui/separator';
 import {
   Plus, Trash2, Pencil, Target, CheckCircle, Circle,
   FileText, LayoutDashboard, ArrowRight, Clock, User, History, Loader2, X, Check,
-  Printer, RefreshCw
+  Printer, RefreshCw, Wand2
 } from 'lucide-react';
-import CaseSyncLogo from './CaseSyncLogo';
+import CasePlanrLogo from './CasePlanrLogo';
 
 const PHASE_NAMES = ['', 'Orientation', 'Active Treatment', 'Relapse Prevention', 'Community Reintegration', 'Commencement Preparation'];
 
@@ -31,14 +31,33 @@ function buildHearingBriefPrompt(participant: Participant, entries: AuditLogEntr
   }
 
   if (participant.goals?.length) {
+    const today = new Date().toISOString().slice(0, 10);
+    const completedIds = new Set(participant.completedGoals ?? []);
+    const overdueGoals = participant.goals.filter(g => g.dueDate && g.dueDate < today && !completedIds.has(g.id));
+
+    if (overdueGoals.length) {
+      lines.push(`OVERDUE Goals (${overdueGoals.length}):`);
+      overdueGoals.forEach(g => lines.push(`- [OVERDUE since ${g.dueDate}] ${g.text}`));
+      lines.push('');
+    }
+
     lines.push('Active Goals:');
-    participant.goals.forEach(g => lines.push(`- ${g}`));
+    participant.goals.forEach(g => {
+      const completed = completedIds.has(g.id);
+      const dateStr = g.dueDate ? ` (Due: ${g.dueDate})` : '';
+      const reviewStr = g.reviewedOn ? ` [Reviewed: ${g.reviewedOn}]` : '';
+      const status = completed ? '[COMPLETED] ' : g.dueDate && g.dueDate < today ? '[OVERDUE] ' : '';
+      lines.push(`- ${status}${g.text}${dateStr}${reviewStr}`);
+    });
     lines.push('');
   }
 
   if (participant.completedGoals?.length) {
     lines.push('Completed Goals:');
-    participant.completedGoals.forEach(g => lines.push(`- ${g}`));
+    participant.completedGoals.forEach(id => {
+      const goal = participant.goals?.find(g => g.id === id);
+      lines.push(`- ${goal ? goal.text : id}`);
+    });
     lines.push('');
   }
 
@@ -265,53 +284,67 @@ export default function AuditLog({ participant }: { participant: Participant }) 
     <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg max-w-5xl mx-auto print:max-w-none print:shadow-none print:border-none">
       <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 bg-white dark:bg-slate-900 space-y-4">
         {/* Title row */}
-        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-          <div className="space-y-1">
-            <h2 className="text-xl md:text-2xl font-black text-slate-900 dark:text-slate-100 tracking-tight">
+        <div className="grid grid-cols-3 items-start gap-4">
+          <div className="col-span-2 space-y-1">
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
               {participant.name} / Case Plan History
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
               Created on {new Date().toLocaleDateString()}
             </p>
           </div>
-          <div className="flex items-center gap-3 shrink-0">
-            <Button
-              size="sm"
-              onClick={generateBrief}
-              disabled={briefStreaming || loading}
-              className="no-print h-8 text-xs font-semibold bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white shadow-sm gap-1.5"
-            >
-              {briefStreaming && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-              History Summary
-            </Button>
-            <div className="hidden sm:flex items-center gap-2 font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100">
-              <CaseSyncLogo className="w-8 h-8" />
-              <span>CaseSync</span>
-            </div>
+          <div className="hidden sm:flex items-center justify-center gap-2 font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100">
+            <CasePlanrLogo className="w-8 h-8" />
+            <span>CasePlanr</span>
           </div>
         </div>
+
+        <Separator className="bg-slate-100 dark:bg-slate-800" />
 
         {/* Participant info strip */}
         <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-2 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
           <div className="text-center py-2 sm:py-0">
-            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Participant</p>
+            <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Participant</p>
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.name}</p>
           </div>
           <div className="text-center py-2 sm:py-0">
-            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Current Phase</p>
+            <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Current Phase</p>
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.currentPhase}</p>
           </div>
           <div className="text-center py-2 sm:py-0">
-            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5">Case Number</p>
+            <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Case Number</p>
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.caseNumber}</p>
           </div>
         </section>
 
+        <Separator className="bg-slate-100 dark:bg-slate-800" />
+
+        {/* Activity Log label + Generate Summary */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Activity Log</span>
+            <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
+              — {visible.length} {visible.length === 1 ? 'entry' : 'entries'}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={generateBrief}
+            disabled={briefStreaming || loading}
+            className="no-print shrink-0 h-7 text-xs font-semibold gap-1.5 px-2 border-burnt-peach-400 dark:border-burnt-peach-500 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 hover:text-burnt-peach-700 dark:hover:text-burnt-peach-300"
+          >
+            {briefStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+            <span className="hidden sm:inline">Generate Summary</span>
+            <span className="sm:hidden">Summary</span>
+          </Button>
+        </div>
         {briefVisible && (
           <div className="rounded-lg border border-burnt-peach-200 dark:border-burnt-peach-800/60 bg-burnt-peach-50 dark:bg-burnt-peach-950/20 p-4 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-black text-burnt-peach-700 dark:text-burnt-peach-400 uppercase tracking-widest">
-                History Summary
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-burnt-peach-700 dark:text-burnt-peach-400 uppercase tracking-wider">
+                Narrative Summary
               </div>
               <div className="no-print flex items-center gap-1">
                 <button
@@ -341,19 +374,6 @@ export default function AuditLog({ participant }: { participant: Participant }) 
             )}
           </div>
         )}
-
-        <Separator className="bg-slate-100 dark:bg-slate-800" />
-
-        {/* Filter pills */}
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Activity Log</span>
-            <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
-              — {visible.length} {visible.length === 1 ? 'entry' : 'entries'}
-            </span>
-          </div>
-        </div>
         <div className="flex flex-wrap gap-2">
           {FILTERS.map(f => (
             <button

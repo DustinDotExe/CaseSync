@@ -8,7 +8,7 @@ import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Save, Mic, Sparkles, Loader2, MicOff } from 'lucide-react';
+import { Save, Mic, Wand2, Loader2, MicOff } from 'lucide-react';
 import { refineNotesStream } from '../services/geminiService';
 
 const IRAS_DOMAINS = [
@@ -225,7 +225,7 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm">
         <CardHeader className="border-b border-slate-100 dark:border-slate-800">
           <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Target Domains</CardTitle>
-          <CardDescription className="text-xs text-slate-500 dark:text-slate-400">Select the criminogenic needs being addressed in this case plan.</CardDescription>
+          <CardDescription className="text-sm text-slate-500 dark:text-slate-400">Select the criminogenic needs being addressed in this case plan.</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -307,7 +307,7 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
               className="text-burnt-peach-600 dark:text-burnt-peach-200 border-burnt-peach-200 dark:border-burnt-peach-900 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
               title="AI Refine"
             >
-              {isRefining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+              {isRefining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
             </Button>
             <Button size="sm" onClick={handleSaveNotes} disabled={saving} className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white">
               <Save className="w-4 h-4" />
@@ -327,7 +327,7 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
             {isRefining && (
               <div className="absolute inset-0 bg-white/70 dark:bg-slate-950/70 rounded-md flex items-start justify-center pt-6 z-10 pointer-events-none">
                 <div className="flex items-center gap-2 text-xs font-bold text-burnt-peach-600 dark:text-burnt-peach-400 animate-pulse bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-burnt-peach-200 dark:border-burnt-peach-800 shadow-sm">
-                  <Sparkles className="w-3 h-3" />
+                  <Wand2 className="w-3 h-3" />
                   AI is refining...
                 </div>
               </div>
