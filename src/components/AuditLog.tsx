@@ -319,26 +319,13 @@ export default function AuditLog({ participant }: { participant: Participant }) 
 
         <Separator className="bg-slate-100 dark:bg-slate-800" />
 
-        {/* Activity Log label + Generate Summary */}
-        <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-300">Activity Log</span>
-            <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
-              — {visible.length} {visible.length === 1 ? 'entry' : 'entries'}
-            </span>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={generateBrief}
-            disabled={briefStreaming || loading}
-            className="no-print shrink-0 h-7 text-xs font-semibold gap-1.5 px-2 border-burnt-peach-400 dark:border-burnt-peach-500 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 hover:text-burnt-peach-700 dark:hover:text-burnt-peach-300"
-          >
-            {briefStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Generate Summary</span>
-            <span className="sm:hidden">Summary</span>
-          </Button>
+        {/* Activity Log label */}
+        <div className="flex items-center gap-2">
+          <History className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+          <span className="text-sm font-bold text-slate-700 dark:text-slate-300">History</span>
+          <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
+            — {visible.length} {visible.length === 1 ? 'entry' : 'entries'}
+          </span>
         </div>
         {briefVisible && (
           <div className="rounded-lg border border-burnt-peach-200 dark:border-burnt-peach-800/60 bg-burnt-peach-50 dark:bg-burnt-peach-950/20 p-4 space-y-2">
@@ -374,20 +361,35 @@ export default function AuditLog({ participant }: { participant: Participant }) 
             )}
           </div>
         )}
-        <div className="flex flex-wrap gap-2">
-          {FILTERS.map(f => (
-            <button
-              key={f.key}
-              onClick={() => setActiveFilter(f.key)}
-              className={`text-[11px] font-bold px-3 py-1 rounded-full border transition-colors ${
-                activeFilter === f.key
-                  ? 'bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white border-burnt-peach-600 dark:border-burnt-peach-500'
-                  : 'bg-transparent text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-burnt-peach-300 dark:hover:border-burnt-peach-700 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400'
-              }`}
+        <div className="grid grid-cols-3 items-center gap-4">
+          <div className="col-span-2 flex flex-wrap gap-2">
+            {FILTERS.map(f => (
+              <button
+                key={f.key}
+                onClick={() => setActiveFilter(f.key)}
+                className={`text-[11px] font-bold px-3 py-1 rounded-full border transition-colors ${
+                  activeFilter === f.key
+                    ? 'bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white border-burnt-peach-600 dark:border-burnt-peach-500'
+                    : 'bg-transparent text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-burnt-peach-300 dark:hover:border-burnt-peach-700 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400'
+                }`}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex justify-center">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={generateBrief}
+              disabled={briefStreaming || loading}
+              className="no-print shrink-0 h-7 text-xs font-semibold gap-1.5 px-2 border-burnt-peach-400 dark:border-burnt-peach-500 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 hover:text-burnt-peach-700 dark:hover:text-burnt-peach-300"
             >
-              {f.label}
-            </button>
-          ))}
+              {briefStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Generate Summary</span>
+              <span className="sm:hidden">Summary</span>
+            </Button>
+          </div>
         </div>
       </CardHeader>
 

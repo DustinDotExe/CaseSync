@@ -42,7 +42,7 @@ export default function CourtReport({ participant, currentUser }: { participant:
     <div className="space-y-6">
       <div ref={reportRef} data-report-container className="print:m-0 print:p-0">
         <Card className="bg-white dark:bg-slate-900 max-w-5xl mx-auto overflow-visible print:max-w-none print:shadow-none print:border-none shadow-lg border-slate-200 dark:border-slate-800">
-        <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 bg-white dark:bg-slate-900">
+        <CardHeader className="bg-white dark:bg-slate-900 space-y-4">
           <div className="grid grid-cols-3 items-start gap-4">
             <div className="col-span-2 space-y-1">
               <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{participant.name} / Case Plan</h2>
@@ -53,10 +53,10 @@ export default function CourtReport({ participant, currentUser }: { participant:
               <span>CasePlanr</span>
             </div>
           </div>
-        </CardHeader>
-        
-        <CardContent className="px-6 md:px-10 py-1 space-y-4">
-          {/* Participant Info */}
+
+          <Separator className="bg-slate-100 dark:bg-slate-800" />
+
+          {/* Participant info strip */}
           <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-2 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
             <div className="text-center py-2 sm:py-0">
               <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Participant</p>
@@ -72,6 +72,10 @@ export default function CourtReport({ participant, currentUser }: { participant:
             </div>
           </section>
 
+          <Separator className="bg-slate-100 dark:bg-slate-800" />
+        </CardHeader>
+
+        <CardContent className="px-6 md:px-10 space-y-4">
           {/* IRAS Domains */}
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
