@@ -1,11 +1,18 @@
+import { auth } from '../firebase';
+
 async function* streamSSE(url: string, prompt: string): AsyncGenerator<string> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 60000);
 
+  const token = await auth.currentUser?.getIdToken().catch(() => null);
+
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       body: JSON.stringify({ prompt }),
       signal: controller.signal,
     });

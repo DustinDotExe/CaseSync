@@ -1,5 +1,0 @@
-{
-  "name": "CaseSync",
-  "description": "A professional court case plan builder and milestone tracker for court case managers.",
-  "requestFramePermissions": ["microphone"]
-}

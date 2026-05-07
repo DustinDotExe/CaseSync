@@ -200,7 +200,21 @@
   /* ── Page setup ──────────────────────────────────────────── */
   @page {
     size: letter portrait;
+    margin: 0.75in 0.75in 0.6in;
+    @bottom-center {
+      content: "(Continued on Next Page)";
+      font-size: 11pt;
+      color: #94a3b8;
+      font-family: sans-serif;
+      vertical-align: top;
+    }
+  }
+
+  @page :last {
     margin: 0.75in;
+    @bottom-center {
+      content: "";
+    }
   }
 
   html, body {

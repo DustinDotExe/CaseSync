@@ -13,6 +13,43 @@ if (!apiKey) {
   console.warn('GEMINI_API_KEY is not configured. AI refinement endpoints will fail.');
 }
 
+const firebaseApiKey = process.env.FIREBASE_API_KEY || process.env.VITE_FIREBASE_API_KEY;
+if (!firebaseApiKey) {
+  console.warn('FIREBASE_API_KEY is not configured. AI endpoints will reject all requests.');
+}
+
+async function verifyFirebaseToken(
+  req: express.Request,
+  res: express.Response,
+  next: express.NextFunction
+) {
+  const header = req.headers.authorization;
+  const token = header?.startsWith('Bearer ') ? header.slice(7) : null;
+
+  if (!token || !firebaseApiKey) {
+    res.status(401).json({ error: 'Unauthorized' });
+    return;
+  }
+
+  try {
+    const verify = await fetch(
+      `https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=${firebaseApiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: token }),
+      }
+    );
+    if (!verify.ok) {
+      res.status(401).json({ error: 'Unauthorized' });
+      return;
+    }
+    next();
+  } catch {
+    res.status(401).json({ error: 'Unauthorized' });
+  }
+}
+
 const ai = new GoogleGenAI({ apiKey: apiKey || '' });
 const MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash-lite';
 
@@ -89,7 +126,7 @@ async function streamGemini(
   res.end();
 }
 
-app.post('/api/refine-goal', (req, res) => {
+app.post('/api/refine-goal', verifyFirebaseToken, (req, res) => {
   const { prompt } = req.body as { prompt: string };
   streamGemini(
     res,
@@ -99,17 +136,17 @@ app.post('/api/refine-goal', (req, res) => {
   );
 });
 
-app.post('/api/refine-notes', (req, res) => {
+app.post('/api/refine-notes', verifyFirebaseToken, (req, res) => {
   const { prompt } = req.body as { prompt: string };
   streamGemini(
     res,
-    'You are an expert court case manager. Your task is to refine case note information. Rewrite these case notes into clear, professional plain language. The goal is a formal record that is easily understood by the defendant. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts.',
+    'You are an expert court case manager. Using the participant case data provided for context, rewrite the case manager observations into clear, professional plain language. The result should reflect the participant\'s current situation, progress, and any concerns informed by their goals and treatment areas. Do not use Markdown, lists, or styling. Keep the tone objective and formal. Output only the refined observations text.',
     prompt,
     300
   );
 });
 
-app.post('/api/hearing-brief', (req, res) => {
+app.post('/api/hearing-brief', verifyFirebaseToken, (req, res) => {
   const { prompt } = req.body as { prompt: string };
   streamGemini(
     res,

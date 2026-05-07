@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { auth } from '../firebase';
+import { auth, db } from '../firebase';
+import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Participant, AuditLogEntry, AuditCategory } from '../types';
 import { subscribeToAuditLog, deleteAuditEntry, updateAuditEntry } from '../services/auditService';
 import { hearingBriefStream } from '../services/geminiService';
@@ -21,7 +22,7 @@ function buildHearingBriefPrompt(participant: Participant, entries: AuditLogEntr
   const lines: string[] = [
     `Participant: ${participant.name}`,
     `Case Number: ${participant.caseNumber}`,
-    `Current Phase: ${participant.currentPhase} – ${PHASE_NAMES[participant.currentPhase] ?? ''}`,
+    `Current Phase: ${participant.currentPhase} – ${PHASE_NAMES[participant.currentPhase] ?? ''} (this is the phase the participant is actively working on, not a completed milestone)`,
     '',
   ];
 
@@ -87,8 +88,8 @@ function buildHearingBriefPrompt(participant: Participant, entries: AuditLogEntr
 type FilterKey = 'completed_goals' | 'all_goals' | 'milestones' | 'observations' | 'profile' | 'all';
 
 const FILTERS: { key: FilterKey; label: string; categories: AuditCategory[] | null }[] = [
-  { key: 'completed_goals', label: 'Completed Goals', categories: ['goal_completed', 'goal_uncompleted'] },
-  { key: 'all_goals',       label: 'All Goals',       categories: ['goal_added', 'goal_deleted', 'goal_edited', 'goal_completed', 'goal_uncompleted'] },
+  { key: 'completed_goals', label: 'Completed Goals', categories: ['goal_completed'] },
+  { key: 'all_goals',       label: 'All Goals',       categories: ['goal_added', 'goal_deleted', 'goal_edited', 'goal_completed'] },
   { key: 'milestones',      label: 'Milestones',      categories: ['phase_transition'] },
   { key: 'observations',    label: 'Observations',    categories: ['observation_updated', 'iras_domain_updated'] },
   { key: 'profile',         label: 'Profile',         categories: ['participant_created', 'participant_deleted', 'participant_info_updated'] },
@@ -177,12 +178,16 @@ export default function AuditLog({ participant }: { participant: Participant }) 
   const [briefStreaming, setBriefStreaming] = useState(false);
   const [briefError, setBriefError] = useState<string | null>(null);
   const [briefVisible, setBriefVisible] = useState(false);
+  const [briefEditing, setBriefEditing] = useState(false);
+  const [sentToObs, setSentToObs] = useState(false);
 
   const generateBrief = async () => {
     setBriefText('');
     setBriefError(null);
     setBriefVisible(true);
     setBriefStreaming(true);
+    setBriefEditing(false);
+    setSentToObs(false);
     try {
       for await (const chunk of hearingBriefStream(buildHearingBriefPrompt(participant, entries))) {
         setBriefText(prev => prev + chunk);
@@ -191,6 +196,20 @@ export default function AuditLog({ participant }: { participant: Participant }) 
       setBriefError(`Failed to generate brief: ${err?.message ?? 'unknown error'}`);
     } finally {
       setBriefStreaming(false);
+    }
+  };
+
+  const sendToObservations = async () => {
+    if (!briefText.trim()) return;
+    try {
+      await updateDoc(doc(db, 'participants', participant.id), {
+        notes: briefText.trim(),
+        updatedAt: serverTimestamp(),
+      });
+      setSentToObs(true);
+      setTimeout(() => setSentToObs(false), 2500);
+    } catch (err: any) {
+      console.error('Failed to send to observations:', err);
     }
   };
 
@@ -266,9 +285,10 @@ export default function AuditLog({ participant }: { participant: Participant }) 
   };
 
   const filterDef = FILTERS.find(f => f.key === activeFilter)!;
-  const visible = filterDef.categories
+  const visible = (filterDef.categories
     ? entries.filter(e => filterDef.categories!.includes(e.category))
-    : entries;
+    : entries
+  ).filter(e => e.category !== 'goal_uncompleted' && !e.description?.startsWith('Milestone Unchecked'));
 
   if (loading) {
     return (
@@ -334,6 +354,28 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                 Narrative Summary
               </div>
               <div className="no-print flex items-center gap-1">
+                {!briefStreaming && briefText && (
+                  <>
+                    <button
+                      onClick={() => setBriefEditing(e => !e)}
+                      title={briefEditing ? 'Done editing' : 'Edit'}
+                      className="p-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors"
+                    >
+                      {briefEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={sendToObservations}
+                      title="Send to Case Manager Observations"
+                      className="no-print flex items-center gap-1 px-2 py-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors text-[10px] font-semibold uppercase tracking-wide"
+                    >
+                      {sentToObs ? (
+                        <><Check className="w-3.5 h-3.5" /><span>Sent</span></>
+                      ) : (
+                        <><FileText className="w-3.5 h-3.5" /><span className="hidden sm:inline">To Observations</span></>
+                      )}
+                    </button>
+                  </>
+                )}
                 <button
                   onClick={generateBrief}
                   disabled={briefStreaming}
@@ -353,6 +395,13 @@ export default function AuditLog({ participant }: { participant: Participant }) 
             </div>
             {briefError ? (
               <p className="text-xs text-red-600 dark:text-red-400">{briefError}</p>
+            ) : briefEditing ? (
+              <Textarea
+                value={briefText}
+                onChange={e => setBriefText(e.target.value)}
+                className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 min-h-[100px] bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-700 resize-none"
+                autoFocus
+              />
             ) : (
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                 {briefText}
@@ -477,16 +526,16 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                           </p>
                         )}
 
-                        {entry.details?.oldValue && entry.details?.newValue && entry.category !== 'goal_completed' && entry.category !== 'goal_uncompleted' && (
-                          <div className="mt-1.5 flex items-start gap-2 text-xs font-mono bg-slate-50 dark:bg-slate-800 rounded-lg px-2.5 py-1.5 w-fit max-w-full">
-                            <span className="line-through text-red-400 dark:text-red-500 break-all">{entry.details.oldValue}</span>
-                            <ArrowRight className="w-3 h-3 text-slate-400 shrink-0 mt-0.5" />
-                            <span className="text-green-600 dark:text-green-400 break-all">{entry.details.newValue}</span>
+                        {entry.details?.oldValue && entry.details?.newValue && entry.category !== 'goal_completed' && (
+                          <div className="mt-1.5 flex items-start gap-2 text-xs bg-slate-50 dark:bg-slate-800 rounded-lg px-2.5 py-1.5 w-fit max-w-full text-slate-500 dark:text-slate-400">
+                            <span className="break-all">{entry.details.oldValue}</span>
+                            <ArrowRight className="w-3 h-3 shrink-0 mt-0.5" />
+                            <span className="break-all">{entry.details.newValue}</span>
                           </div>
                         )}
 
                         {entry.details?.oldValue && !entry.details?.newValue && (
-                          <p className="mt-1.5 text-xs font-mono text-red-400 dark:text-red-500 bg-slate-50 dark:bg-slate-800 rounded-lg px-2.5 py-1.5 break-all">
+                          <p className="mt-1.5 text-xs bg-slate-50 dark:bg-slate-800 rounded-lg px-2.5 py-1.5 break-all text-slate-500 dark:text-slate-400">
                             {entry.details.oldValue}
                           </p>
                         )}

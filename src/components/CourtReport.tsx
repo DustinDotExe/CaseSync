@@ -2,7 +2,7 @@ import { useRef, useEffect } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Participant, CurrentUser } from '../types';
-import { logAuditEvent } from '../services/auditService';
+import { logAuditEvent, retractAuditEntry } from '../services/auditService';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
@@ -103,7 +103,14 @@ export default function CourtReport({ participant, currentUser }: { participant:
             </h3>
             <div className="space-y-3">
               {participant.goals.length > 0 ? (
-                participant.goals.map((goal) => {
+                [...participant.goals]
+                  .sort((a, b) => {
+                    const aCompleted = (participant.completedGoals || []).includes(a.id);
+                    const bCompleted = (participant.completedGoals || []).includes(b.id);
+                    if (aCompleted === bCompleted) return 0;
+                    return aCompleted ? -1 : 1;
+                  })
+                  .map((goal) => {
                   const isCompleted = (participant.completedGoals || []).includes(goal.id);
                   const overdue = !isCompleted && goal.dueDate && isOverdue(goal.dueDate);
 
@@ -119,14 +126,22 @@ export default function CourtReport({ participant, currentUser }: { participant:
                         completedGoals: newCompleted,
                         updatedAt: serverTimestamp()
                       });
-                      logAuditEvent({
-                        participantId: participant.id,
-                        caseManagerUid: participant.uid,
-                        category: nowCompleting ? 'goal_completed' : 'goal_uncompleted',
-                        description: nowCompleting ? 'Goal Completed' : 'Goal Uncompleted',
-                        details: { field: 'goal', newValue: goal.text },
-                        currentUser
-                      });
+                      if (nowCompleting) {
+                        logAuditEvent({
+                          participantId: participant.id,
+                          caseManagerUid: participant.uid,
+                          category: 'goal_completed',
+                          description: 'Goal Completed',
+                          details: { field: 'goal', newValue: goal.text },
+                          currentUser
+                        });
+                      } else {
+                        retractAuditEntry(
+                          participant.id,
+                          participant.uid,
+                          e => e.category === 'goal_completed' && e.details?.newValue === goal.text
+                        );
+                      }
                     } catch (err) {
                       console.error("Update Goal Completion Error:", err);
                     }
@@ -197,14 +212,17 @@ export default function CourtReport({ participant, currentUser }: { participant:
           </section>
 
           {/* Footer */}
-          <div className="pt-12 border-t border-slate-100 dark:border-slate-800 mt-12">
+          <div className="hidden print:block pt-12 border-t border-slate-100 mt-12">
+            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-8">
+              By signing below, I acknowledge that I have reviewed this plan, understand what is expected of me, and agree to fulfill the outlined goals, objectives, and tasks to the best of my ability.
+            </p>
             <div className="flex flex-col sm:flex-row justify-between items-end gap-8 mb-8">
               <div className="space-y-1 w-full sm:w-auto">
-                <div className="w-full sm:w-48 border-b border-slate-400 dark:border-slate-600 h-8"></div>
+                <div className="w-full sm:w-72 border-b border-slate-400 dark:border-slate-600 h-8"></div>
                 <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Case Manager Signature</p>
               </div>
               <div className="space-y-1 w-full sm:w-auto">
-                <div className="w-full sm:w-48 border-b border-slate-400 dark:border-slate-600 h-8"></div>
+                <div className="w-full sm:w-72 border-b border-slate-400 dark:border-slate-600 h-8"></div>
                 <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider text-left sm:text-right">Participant Signature</p>
               </div>
             </div>

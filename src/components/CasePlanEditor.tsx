@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { Participant, CurrentUser } from '../types';
-import { logAuditEvent } from '../services/auditService';
+import { logAuditEvent, retractAuditEntry } from '../services/auditService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Checkbox } from './ui/checkbox';
 import { Label } from './ui/label';
@@ -27,6 +27,54 @@ const PHASE_NAMES: Record<string, string> = {
   phase4: 'Community Reintegration',
   phase5: 'Commencement Preparation'
 };
+
+function buildRefineNotesPrompt(participant: Participant, notes: string): string {
+  const phaseLabel = PHASE_NAMES[`phase${participant.currentPhase}`] ?? '';
+  const lines: string[] = [
+    `Participant: ${participant.name}`,
+    `Case Number: ${participant.caseNumber}`,
+    `Current Phase: ${participant.currentPhase} – ${phaseLabel} (this is the phase the participant is actively working on, not a completed milestone)`,
+    '',
+  ];
+
+  if (participant.irasDomains?.length) {
+    lines.push(`Treatment Areas (IRAS): ${participant.irasDomains.join(', ')}`);
+    lines.push('');
+  }
+
+  if (participant.goals?.length) {
+    const today = new Date().toISOString().slice(0, 10);
+    const completedIds = new Set(participant.completedGoals ?? []);
+    lines.push('Active Goals:');
+    participant.goals.forEach(g => {
+      const completed = completedIds.has(g.id);
+      const dateStr = g.dueDate ? ` (Due: ${g.dueDate})` : '';
+      const status = completed ? '[COMPLETED] ' : g.dueDate && g.dueDate < today ? '[OVERDUE] ' : '';
+      lines.push(`- ${status}${g.text}${dateStr}`);
+    });
+    lines.push('');
+  }
+
+  if (participant.completedGoals?.length) {
+    lines.push('Completed Goals:');
+    participant.completedGoals.forEach(id => {
+      const goal = participant.goals?.find(g => g.id === id);
+      lines.push(`- ${goal ? goal.text : id}`);
+    });
+    lines.push('');
+  }
+
+  if (notes.trim()) {
+    lines.push('Case Manager Observations (to be refined):');
+    lines.push(notes.trim());
+    lines.push('');
+    lines.push('Using the case context above, rewrite the Case Manager Observations into clear, professional plain language. Output only the refined observations text.');
+  } else {
+    lines.push('Using the case context above, draft professional case manager observations that summarize the participant\'s current situation, progress toward goals, and any notable concerns. Output only the observations text.');
+  }
+
+  return lines.join('\n');
+}
 
 export default function CasePlanEditor({ participant, currentUser }: { participant: Participant; currentUser: CurrentUser }) {
   const [notes, setNotes] = useState(participant.notes);
@@ -120,10 +168,9 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
   };
 
   const handleAIRefine = async () => {
-    if (!notes.trim()) return;
     setIsRefining(true);
     try {
-      const stream = refineNotesStream(notes);
+      const stream = refineNotesStream(buildRefineNotesPrompt(participant, notes));
       let fullText = '';
       for await (const chunk of stream) {
         fullText += chunk;
@@ -150,15 +197,21 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
         irasDomains: newDomains,
         updatedAt: serverTimestamp()
       });
-      logAuditEvent({
-        participantId: participant.id,
-        caseManagerUid: participant.uid,
-        category: 'iras_domain_updated',
-        description: isSelected
-          ? `Target Domain Removed: ${domain}`
-          : `Target Domain Added: ${domain}`,
-        currentUser
-      });
+      if (isSelected) {
+        retractAuditEntry(
+          participant.id,
+          participant.uid,
+          e => e.category === 'iras_domain_updated' && e.description === `Target Domain Added: ${domain}`
+        );
+      } else {
+        logAuditEvent({
+          participantId: participant.id,
+          caseManagerUid: participant.uid,
+          category: 'iras_domain_updated',
+          description: `Target Domain Added: ${domain}`,
+          currentUser
+        });
+      }
     } catch (err) {
       console.error("Update IRAS Error:", err);
     }
@@ -182,16 +235,22 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
         updatedAt: serverTimestamp()
       });
       const phaseName = PHASE_NAMES[phase] ?? phase;
-      logAuditEvent({
-        participantId: participant.id,
-        caseManagerUid: participant.uid,
-        category: 'phase_transition',
-        description: completing
-          ? `Milestone Completed: ${phaseName}`
-          : `Milestone Unchecked: ${phaseName}`,
-        details: { newValue: `Phase ${newPhase}` },
-        currentUser
-      });
+      if (completing) {
+        logAuditEvent({
+          participantId: participant.id,
+          caseManagerUid: participant.uid,
+          category: 'phase_transition',
+          description: `Milestone Completed: ${phaseName}`,
+          details: { newValue: `Phase ${newPhase}` },
+          currentUser
+        });
+      } else {
+        retractAuditEntry(
+          participant.id,
+          participant.uid,
+          e => e.category === 'phase_transition' && e.description === `Milestone Completed: ${phaseName}`
+        );
+      }
     } catch (err) {
       console.error("Update Error:", err);
     }
@@ -303,7 +362,7 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
               size="sm" 
               variant="outline" 
               onClick={handleAIRefine} 
-              disabled={isRefining || !notes.trim()}
+              disabled={isRefining}
               className="text-burnt-peach-600 dark:text-burnt-peach-200 border-burnt-peach-200 dark:border-burnt-peach-900 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
               title="AI Refine"
             >
