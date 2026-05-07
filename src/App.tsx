@@ -593,10 +593,7 @@ export default function App() {
             )
           ) : (
             <>
-              <div className="space-y-1 text-center mb-5">
-                <h2 className="text-xl font-bold text-slate-800">
-                  {authMode === 'signin' ? 'Welcome Back' : 'Create Account'}
-                </h2>
+              <div className="text-center mb-5">
                 <p className="text-slate-500 text-sm leading-relaxed">
                   {authMode === 'signin'
                     ? 'Sign in to begin building your case plans with ease.'
