@@ -594,9 +594,9 @@ export default function App() {
           ) : (
             <>
               <div className="text-center mb-5">
-                <p className="text-slate-500 text-sm leading-relaxed">
+                <p className="text-slate-500 text-sm leading-relaxed text-balance">
                   {authMode === 'signin'
-                    ? 'Track progress. Build plans. Move cases forward.'
+                    ? 'Manage cases, track milestones, and document progress — all in one place.'
                     : 'Create an account to get started with CasePlanr.'}
                 </p>
               </div>
