@@ -374,6 +374,27 @@ export default function UserSettings({
           </div>
 
         </div>
+
+        {/* ── Legal footer ─────────────────────────────────────────────────── */}
+        <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-center gap-4">
+          <a
+            href="/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors"
+          >
+            Privacy Policy
+          </a>
+          <span className="text-slate-200 dark:text-slate-700 select-none">&middot;</span>
+          <a
+            href="/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors"
+          >
+            Terms of Service
+          </a>
+        </div>
       </SheetContent>
     </Sheet>
   );
