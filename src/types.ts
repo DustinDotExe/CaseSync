@@ -68,13 +68,19 @@ export interface AuditLogEntry {
   timestamp: any;
 }
 
-export interface Milestones {
-  phase1: boolean;
-  phase2: boolean;
-  phase3: boolean;
-  phase4: boolean;
-  phase5: boolean;
+export interface MilestonePhase {
+  label: string;
 }
+
+export const DEFAULT_MILESTONE_PHASES: MilestonePhase[] = [
+  { label: 'Orientation & Stabilization' },
+  { label: 'Active Treatment' },
+  { label: 'Relapse Prevention' },
+  { label: 'Community Reintegration' },
+  { label: 'Commencement Preparation' },
+];
+
+export type Milestones = Record<string, boolean>;
 
 export interface Participant {
   id: string;

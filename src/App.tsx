@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
-import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
 import { logAuditEvent } from './services/auditService';
@@ -20,7 +20,7 @@ import {
   SheetHeader,
   SheetTitle
 } from './components/ui/sheet';
-import { Participant, CurrentUser, StoredTemplateCategory, normalizeGoals } from './types';
+import { Participant, CurrentUser, StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES, normalizeGoals } from './types';
 import CasePlanEditor from './components/CasePlanEditor';
 import AIGoalRefiner, { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefiner';
 import CourtReport from './components/CourtReport';
@@ -42,6 +42,8 @@ export default function App() {
   const [loginError, setLoginError] = useState<string | null>(null);
   const [authMode, setAuthMode] = useState<'signin' | 'signup' | 'reset'>('signin');
   const [authEmail, setAuthEmail] = useState('');
+  const [authDisplayName, setAuthDisplayName] = useState('');
+  const [authJobTitle, setAuthJobTitle] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [authConfirmPassword, setAuthConfirmPassword] = useState('');
   const [resetEmailSent, setResetEmailSent] = useState(false);
@@ -54,6 +56,7 @@ export default function App() {
   const [userTitle, setUserTitle] = useState('Court Case Manager');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [goalTemplates, setGoalTemplates] = useState<StoredTemplateCategory[]>(DEFAULT_STORED_TEMPLATES);
+  const [milestonePhases, setMilestonePhases] = useState<MilestonePhase[]>(DEFAULT_MILESTONE_PHASES);
   const [themePreference, setThemePreference] = useState<'light' | 'dark' | 'system'>(() => {
     const stored = localStorage.getItem('themePreference') as 'light' | 'dark' | 'system' | null;
     return stored || 'system';
@@ -120,6 +123,7 @@ export default function App() {
           const data = docSnap.data();
           setUserTitle(data.title || 'Court Case Manager');
           if (data.goalTemplates?.length) setGoalTemplates(data.goalTemplates);
+          if (data.milestonePhases?.length) setMilestonePhases(data.milestonePhases);
         } else {
           // Initialize user doc if it doesn't exist
           setDoc(userDocRef, {
@@ -179,6 +183,10 @@ export default function App() {
   const handleEmailAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
+    if (authMode === 'signup' && !authDisplayName.trim()) {
+      setLoginError('Please enter your full name.');
+      return;
+    }
     if (authMode === 'signup' && authPassword !== authConfirmPassword) {
       setLoginError('Passwords do not match.');
       return;
@@ -186,7 +194,17 @@ export default function App() {
     setAuthLoading(true);
     try {
       if (authMode === 'signup') {
-        await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        const credential = await createUserWithEmailAndPassword(auth, authEmail, authPassword);
+        await updateProfile(credential.user, { displayName: authDisplayName.trim() });
+        await setDoc(doc(db, 'users', credential.user.uid), {
+          uid: credential.user.uid,
+          email: credential.user.email,
+          displayName: authDisplayName.trim(),
+          role: 'case_manager',
+          title: authJobTitle.trim() || 'Court Case Manager',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
       } else {
         await signInWithEmailAndPassword(auth, authEmail, authPassword);
       }
@@ -237,13 +255,7 @@ export default function App() {
         currentPhase: 1,
         goals: [],
         notes: '',
-        milestones: {
-          phase1: false,
-          phase2: false,
-          phase3: false,
-          phase4: false,
-          phase5: false
-        },
+        milestones: Object.fromEntries(milestonePhases.map((_, i) => [`phase${i + 1}`, false])),
         irasDomains: [],
         uid: user.uid,
         createdAt: serverTimestamp(),
@@ -602,6 +614,35 @@ export default function App() {
               </div>
 
               <form onSubmit={handleEmailAuth} className="space-y-3">
+                {authMode === 'signup' && (
+                  <>
+                    <div className="space-y-1">
+                      <Label htmlFor="auth-name" className="text-slate-700 font-semibold text-sm">Full Name</Label>
+                      <Input
+                        id="auth-name"
+                        type="text"
+                        placeholder="Jane Smith"
+                        value={authDisplayName}
+                        onChange={e => setAuthDisplayName(e.target.value)}
+                        required
+                        className="h-11"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="auth-title" className="text-slate-700 font-semibold text-sm">Job Title</Label>
+                      <Input
+                        id="auth-title"
+                        type="text"
+                        placeholder="Court Case Manager"
+                        value={authJobTitle}
+                        onChange={e => setAuthJobTitle(e.target.value)}
+                        className="h-11"
+                      />
+                      <p className="text-xs text-slate-400 pt-0.5">You can update this anytime in Settings.</p>
+                    </div>
+                  </>
+                )}
                 <div className="space-y-1">
                   <Label htmlFor="auth-email" className="text-slate-700 font-semibold text-sm">Email</Label>
                   <Input
@@ -668,7 +709,7 @@ export default function App() {
                   <>Don't have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => { setAuthMode('signup'); setLoginError(null); }}
+                      onClick={() => { setAuthMode('signup'); setLoginError(null); setAuthDisplayName(''); setAuthJobTitle(''); }}
                       className="text-burnt-peach-600 font-semibold hover:underline"
                     >
                       Sign up
@@ -678,7 +719,7 @@ export default function App() {
                   <>Already have an account?{' '}
                     <button
                       type="button"
-                      onClick={() => { setAuthMode('signin'); setLoginError(null); }}
+                      onClick={() => { setAuthMode('signin'); setLoginError(null); setAuthDisplayName(''); setAuthJobTitle(''); }}
                       className="text-burnt-peach-600 font-semibold hover:underline"
                     >
                       Sign in
@@ -870,14 +911,14 @@ export default function App() {
                     <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Current Phase</p>
                     <div className="flex items-center gap-1.5">
                       <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{selectedParticipant.currentPhase}</span>
-                      <span className="text-slate-300 dark:text-slate-700 font-bold text-sm">/ 5</span>
+                      <span className="text-slate-300 dark:text-slate-700 font-bold text-sm">/ {milestonePhases.length}</span>
                     </div>
                   </div>
                   <div className="space-y-1 px-3 sm:px-5">
                     <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Progress</p>
                     <div className="space-y-1">
-                      <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{Math.round((selectedParticipant.currentPhase / 5) * 100)}%</span>
-                      <Progress value={(selectedParticipant.currentPhase / 5) * 100} className="h-1.5 w-full max-w-[4rem] bg-slate-100 dark:bg-slate-800" />
+                      <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{Math.round((selectedParticipant.currentPhase / milestonePhases.length) * 100)}%</span>
+                      <Progress value={(selectedParticipant.currentPhase / milestonePhases.length) * 100} className="h-1.5 w-full max-w-[4rem] bg-slate-100 dark:bg-slate-800" />
                     </div>
                   </div>
                   <div className="space-y-1 pl-3 sm:pl-5">
@@ -916,7 +957,7 @@ export default function App() {
                 </TabsList>
 
                 <TabsContent value="plan" className="mt-6 outline-none">
-                  <CasePlanEditor participant={selectedParticipant} currentUser={currentUser} />
+                  <CasePlanEditor participant={selectedParticipant} currentUser={currentUser} milestonePhases={milestonePhases} />
                 </TabsContent>
 
                 <TabsContent value="ai" className="mt-6 outline-none">
@@ -1023,6 +1064,8 @@ export default function App() {
           onPaletteChange={handlePaletteChange}
           goalTemplates={goalTemplates}
           onGoalTemplatesChange={setGoalTemplates}
+          milestonePhases={milestonePhases}
+          onMilestonePhasesChange={setMilestonePhases}
         />
       )}
     </div>

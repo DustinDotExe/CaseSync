@@ -8,9 +8,9 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
 import { Separator } from './ui/separator';
-import { User, Sun, Moon, Monitor, LogOut, Check, Palette, ChevronDown, Plus, Pencil, Trash2, X, RotateCcw } from 'lucide-react';
+import { User, Sun, Moon, Monitor, LogOut, Check, Palette, ChevronDown, Plus, Pencil, Trash2, X, RotateCcw, Flag } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { StoredTemplateCategory } from '../types';
+import { StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES } from '../types';
 import { DEFAULT_STORED_TEMPLATES } from './AIGoalRefiner';
 
 interface UserSettingsProps {
@@ -25,6 +25,8 @@ interface UserSettingsProps {
   onPaletteChange: (color: 'orange' | 'blue' | 'red' | 'green') => void;
   goalTemplates: StoredTemplateCategory[];
   onGoalTemplatesChange: (templates: StoredTemplateCategory[]) => void;
+  milestonePhases: MilestonePhase[];
+  onMilestonePhasesChange: (phases: MilestonePhase[]) => void;
 }
 
 const PALETTES: { value: 'orange' | 'blue' | 'red' | 'green'; label: string; swatch: string }[] = [
@@ -44,6 +46,7 @@ export default function UserSettings({
   open, onOpenChange, user, userTitle, isDark,
   onThemeChange, themePreference, paletteColor, onPaletteChange,
   goalTemplates, onGoalTemplatesChange,
+  milestonePhases, onMilestonePhasesChange,
 }: UserSettingsProps) {
   // ── Profile ──────────────────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState(user.displayName || '');
@@ -57,6 +60,7 @@ export default function UserSettings({
 
   // ── Templates ────────────────────────────────────────────────────────────
   const [localTemplates, setLocalTemplates] = useState<StoredTemplateCategory[]>(goalTemplates);
+  const [localPhases, setLocalPhases] = useState<MilestonePhase[]>(milestonePhases);
   const [expandedCats, setExpandedCats] = useState<Record<number, boolean>>({});
   const [editingKey, setEditingKey] = useState<string | null>(null); // "catIdx-tmplIdx"
   const [editLabel, setEditLabel] = useState('');
@@ -68,6 +72,7 @@ export default function UserSettings({
   useEffect(() => {
     if (open) {
       setLocalTemplates(goalTemplates);
+      setLocalPhases(milestonePhases);
       setDisplayName(user.displayName || '');
       setTitle(userTitle);
       setEditingKey(null);
@@ -85,6 +90,19 @@ export default function UserSettings({
       });
     } catch (err) {
       console.error('Save templates error:', err);
+    }
+  };
+
+  const persistPhases = async (updated: MilestonePhase[]) => {
+    setLocalPhases(updated);
+    onMilestonePhasesChange(updated);
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        milestonePhases: updated,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Save milestone phases error:', err);
     }
   };
 
@@ -358,6 +376,60 @@ export default function UserSettings({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+          </div>
+
+          {/* ── Milestones ──────────────────────────────────────────────── */}
+          <div>
+            <SectionHeader id="milestones" icon={Flag} label="Milestones" />
+            {expanded.milestones && (
+              <div className="pb-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Configure the phases participants progress through.</p>
+                  <Button variant="ghost" size="sm" onClick={() => persistPhases(DEFAULT_MILESTONE_PHASES)} className="h-7 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 gap-1 shrink-0">
+                    <RotateCcw className="w-3 h-3" /> Reset
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {localPhases.map((phase, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 w-14 shrink-0 uppercase tracking-wider">Phase {i + 1}</span>
+                      <Input
+                        value={phase.label}
+                        onChange={e => {
+                          const updated = localPhases.map((p, pi) => pi === i ? { label: e.target.value } : p);
+                          setLocalPhases(updated);
+                        }}
+                        onBlur={e => {
+                          const updated = localPhases.map((p, pi) => pi === i ? { label: e.target.value } : p);
+                          persistPhases(updated);
+                        }}
+                        className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                        placeholder={`Phase ${i + 1} label`}
+                      />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => persistPhases(localPhases.filter((_, pi) => pi !== i))}
+                        disabled={localPhases.length <= 1}
+                        className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-30"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+
+                {localPhases.length < 10 && (
+                  <button
+                    onClick={() => persistPhases([...localPhases, { label: '' }])}
+                    className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors rounded-lg border border-dashed border-slate-200 dark:border-slate-700"
+                  >
+                    <Plus className="w-3 h-3" /> Add Phase
+                  </button>
+                )}
               </div>
             )}
           </div>

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Participant, CurrentUser } from '../types';
+import { Participant, CurrentUser, MilestonePhase } from '../types';
 import { logAuditEvent, retractAuditEntry } from '../services/auditService';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Checkbox } from './ui/checkbox';
@@ -20,16 +20,9 @@ const IRAS_DOMAINS = [
   "Criminal Attitudes and Behaviors"
 ];
 
-const PHASE_NAMES: Record<string, string> = {
-  phase1: 'Orientation & Stabilization',
-  phase2: 'Active Treatment',
-  phase3: 'Relapse Prevention',
-  phase4: 'Community Reintegration',
-  phase5: 'Commencement Preparation'
-};
 
-function buildRefineNotesPrompt(participant: Participant, notes: string): string {
-  const phaseLabel = PHASE_NAMES[`phase${participant.currentPhase}`] ?? '';
+function buildRefineNotesPrompt(participant: Participant, notes: string, milestonePhases: MilestonePhase[]): string {
+  const phaseLabel = milestonePhases[participant.currentPhase - 1]?.label ?? '';
   const lines: string[] = [
     `Participant: ${participant.name}`,
     `Case Number: ${participant.caseNumber}`,
@@ -76,7 +69,7 @@ function buildRefineNotesPrompt(participant: Participant, notes: string): string
   return lines.join('\n');
 }
 
-export default function CasePlanEditor({ participant, currentUser }: { participant: Participant; currentUser: CurrentUser }) {
+export default function CasePlanEditor({ participant, currentUser, milestonePhases }: { participant: Participant; currentUser: CurrentUser; milestonePhases: MilestonePhase[] }) {
   const [notes, setNotes] = useState(participant.notes);
   const [milestones, setMilestones] = useState(participant.milestones);
   const [irasDomains, setIrasDomains] = useState(participant.irasDomains || []);
@@ -170,7 +163,7 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
   const handleAIRefine = async () => {
     setIsRefining(true);
     try {
-      const stream = refineNotesStream(buildRefineNotesPrompt(participant, notes));
+      const stream = refineNotesStream(buildRefineNotesPrompt(participant, notes, milestonePhases));
       let fullText = '';
       for await (const chunk of stream) {
         fullText += chunk;
@@ -217,16 +210,15 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
     }
   };
 
-  const handleToggleMilestone = async (phase: keyof typeof milestones) => {
-    const completing = !milestones[phase];
-    const newMilestones = { ...milestones, [phase]: completing };
+  const handleToggleMilestone = async (phaseKey: string, phaseIndex: number) => {
+    const completing = !milestones[phaseKey];
+    const newMilestones = { ...milestones, [phaseKey]: completing };
     setMilestones(newMilestones);
 
     let newPhase = 1;
-    if (newMilestones.phase5) newPhase = 5;
-    else if (newMilestones.phase4) newPhase = 4;
-    else if (newMilestones.phase3) newPhase = 3;
-    else if (newMilestones.phase2) newPhase = 2;
+    for (let i = milestonePhases.length; i >= 1; i--) {
+      if (newMilestones[`phase${i}`]) { newPhase = i; break; }
+    }
 
     try {
       await updateDoc(doc(db, 'participants', participant.id), {
@@ -234,7 +226,7 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
         currentPhase: newPhase,
         updatedAt: serverTimestamp()
       });
-      const phaseName = PHASE_NAMES[phase] ?? phase;
+      const phaseName = milestonePhases[phaseIndex]?.label ?? phaseKey;
       if (completing) {
         logAuditEvent({
           participantId: participant.id,
@@ -316,25 +308,25 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
       <Card className="md:col-span-1 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardHeader>
           <CardTitle className="text-lg font-bold text-slate-800 dark:text-slate-200">Milestone Tracker</CardTitle>
-          <CardDescription className="text-slate-500 dark:text-slate-400">Track progress through phases 1-5.</CardDescription>
+          <CardDescription className="text-slate-500 dark:text-slate-400">Track progress through {milestonePhases.length} phases.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {[1, 2, 3, 4, 5].map((phase) => {
-            const phaseKey = `phase${phase}` as keyof typeof milestones;
-            const isCompleted = milestones[phaseKey];
+          {milestonePhases.map((mp, i) => {
+            const phaseKey = `phase${i + 1}`;
+            const isCompleted = !!milestones[phaseKey];
             return (
-              <div key={phase} className="flex items-center space-x-3 group">
-                <Checkbox 
-                  id={`phase-${phase}`} 
+              <div key={phaseKey} className="flex items-center space-x-3 group">
+                <Checkbox
+                  id={`phase-${i + 1}`}
                   checked={isCompleted}
-                  onCheckedChange={() => handleToggleMilestone(phaseKey)}
+                  onCheckedChange={() => handleToggleMilestone(phaseKey, i)}
                   className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-burnt-peach-600 data-[state=checked]:border-burnt-peach-600"
                 />
-                <Label 
-                  htmlFor={`phase-${phase}`}
+                <Label
+                  htmlFor={`phase-${i + 1}`}
                   className={`text-sm font-medium cursor-pointer transition-colors ${isCompleted ? 'text-burnt-peach-700 dark:text-burnt-peach-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
-                  Phase {phase}: {getPhaseName(phase)}
+                  Phase {i + 1}: {mp.label}
                 </Label>
               </div>
             );
@@ -405,13 +397,3 @@ export default function CasePlanEditor({ participant, currentUser }: { participa
   );
 }
 
-function getPhaseName(phase: number) {
-  const names = [
-    "Orientation & Stabilization",
-    "Active Treatment",
-    "Relapse Prevention",
-    "Community Reintegration",
-    "Commencement Preparation"
-  ];
-  return names[phase - 1];
-}
