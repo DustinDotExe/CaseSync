@@ -21,19 +21,20 @@ interface UserSettingsProps {
   isDark: boolean;
   onThemeChange: (theme: 'light' | 'dark' | 'system') => void;
   themePreference: 'light' | 'dark' | 'system';
-  paletteColor: 'orange' | 'blue' | 'red' | 'green';
-  onPaletteChange: (color: 'orange' | 'blue' | 'red' | 'green') => void;
+  paletteColor: 'orange' | 'blue' | 'red' | 'green' | 'purple';
+  onPaletteChange: (color: 'orange' | 'blue' | 'red' | 'green' | 'purple') => void;
   goalTemplates: StoredTemplateCategory[];
   onGoalTemplatesChange: (templates: StoredTemplateCategory[]) => void;
   milestonePhases: MilestonePhase[];
   onMilestonePhasesChange: (phases: MilestonePhase[]) => void;
 }
 
-const PALETTES: { value: 'orange' | 'blue' | 'red' | 'green'; label: string; swatch: string }[] = [
+const PALETTES: { value: 'orange' | 'blue' | 'red' | 'green' | 'purple'; label: string; swatch: string }[] = [
   { value: 'orange', label: 'Orange', swatch: '#ea580c' },
   { value: 'blue',   label: 'Blue',   swatch: '#2563eb' },
   { value: 'red',    label: 'Red',    swatch: '#dc2626' },
   { value: 'green',  label: 'Green',  swatch: '#16a34a' },
+  { value: 'purple', label: 'Purple', swatch: '#9333ea' },
 ];
 
 const THEME_OPTIONS: { value: 'light' | 'dark' | 'system'; label: string; Icon: React.ElementType }[] = [
@@ -245,17 +246,11 @@ export default function UserSettings({
                     <Palette className="w-3.5 h-3.5 text-slate-400" />
                     <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Color</p>
                   </div>
-                  <div className="grid grid-cols-4 gap-2">
+                  <div className="flex justify-center gap-3">
                     {PALETTES.map(({ value, label, swatch }) => (
                       <button key={value} onClick={() => onPaletteChange(value)} title={label}
-                        className={cn('flex flex-col items-center gap-2 py-3 px-1 rounded-xl border-2 text-xs font-bold transition-all',
-                          paletteColor === value
-                            ? 'border-slate-800 dark:border-white bg-slate-50 dark:bg-slate-800'
-                            : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                        )}>
-                        <span className="w-6 h-6 rounded-full block" style={{ backgroundColor: swatch, boxShadow: paletteColor === value ? `0 0 0 2px white, 0 0 0 4px ${swatch}` : undefined }} />
-                        <span className="text-slate-600 dark:text-slate-400">{label}</span>
-                      </button>
+                        className="w-7 h-7 rounded-full transition-all focus:outline-none"
+                        style={{ backgroundColor: swatch, boxShadow: paletteColor === value ? `0 0 0 2px white, 0 0 0 4px ${swatch}` : undefined }} />
                     ))}
                   </div>
                 </div>

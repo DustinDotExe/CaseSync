@@ -61,8 +61,8 @@ export default function App() {
     const stored = localStorage.getItem('themePreference') as 'light' | 'dark' | 'system' | null;
     return stored || 'system';
   });
-  const [paletteColor, setPaletteColor] = useState<'orange' | 'blue' | 'red' | 'green'>(() => {
-    const stored = localStorage.getItem('paletteColor') as 'orange' | 'blue' | 'red' | 'green' | null;
+  const [paletteColor, setPaletteColor] = useState<'orange' | 'blue' | 'red' | 'green' | 'purple'>(() => {
+    const stored = localStorage.getItem('paletteColor') as 'orange' | 'blue' | 'red' | 'green' | 'purple' | null;
     return stored || 'blue';
   });
   const [isDark, setIsDark] = useState(() => {
@@ -356,7 +356,7 @@ export default function App() {
     }
   };
 
-  const handlePaletteChange = (color: 'orange' | 'blue' | 'red' | 'green') => {
+  const handlePaletteChange = (color: 'orange' | 'blue' | 'red' | 'green' | 'purple') => {
     setPaletteColor(color);
     localStorage.setItem('paletteColor', color);
   };
