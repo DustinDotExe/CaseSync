@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-slate-50 py-12 px-4">
@@ -149,7 +151,7 @@ export default function PrivacyPolicy() {
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-2">{title}</h2>
@@ -158,7 +160,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-function Subsection({ title, children }: { title: string; children: React.ReactNode }) {
+function Subsection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <div className="space-y-1">
       <h3 className="font-semibold text-slate-800">{title}</h3>
