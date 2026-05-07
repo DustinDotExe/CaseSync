@@ -596,7 +596,7 @@ export default function App() {
               <div className="text-center mb-5">
                 <p className="text-slate-500 text-sm leading-relaxed">
                   {authMode === 'signin'
-                    ? 'Sign in to begin building your case plans with ease.'
+                    ? 'Track progress. Build plans. Move cases forward.'
                     : 'Create an account to get started with CasePlanr.'}
                 </p>
               </div>
