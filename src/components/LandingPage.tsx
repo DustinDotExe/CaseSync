@@ -41,31 +41,25 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="absolute top-0 left-0 right-0 z-10 px-6 py-5 flex items-center justify-between max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-2.5">
-          <CasePlanrLogo className="w-8 h-8 text-burnt-peach-400" />
-          <span className="text-xl font-black text-white tracking-tight">CasePlanr</span>
+          <CasePlanrLogo className="w-8 h-8 text-burnt-peach-600" />
+          <span className="text-xl font-black text-slate-900 tracking-tight">CasePlanr</span>
         </div>
         <a
           href="/app"
-          className="px-4 py-2 bg-burnt-peach-400 hover:bg-burnt-peach-500 text-white text-sm font-bold rounded-xl transition-colors"
+          className="px-4 py-2 bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white text-sm font-bold rounded-xl transition-colors"
         >
           Sign In
         </a>
       </header>
 
       {/* Hero */}
-      <section className="relative bg-slate-950 overflow-hidden">
-        {/* Background glow */}
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-burnt-peach-600/20 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-1/4 w-[300px] h-[300px] bg-burnt-peach-800/10 rounded-full blur-3xl" />
-        </div>
-
+      <section className="relative overflow-hidden bg-[radial-gradient(ellipse_100%_70%_at_50%_100%,#dbeafe,#ffffff)]">
         <div className="relative max-w-5xl mx-auto px-6 pt-40 pb-32 text-center">
-          <h1 className="text-5xl md:text-7xl font-black text-white tracking-tight leading-[1.05] mb-6">
+          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.05] mb-6">
             Case plans that<br />
-            <span className="text-burnt-peach-400">keep cases moving.</span>
+            <span className="text-burnt-peach-600">keep cases moving.</span>
           </h1>
-          <p className="text-lg text-slate-400 max-w-xl mx-auto text-balance leading-relaxed">
+          <p className="text-lg text-slate-500 max-w-xl mx-auto text-balance leading-relaxed">
             CasePlanr helps court case managers track participant progress, manage goals, document observations, and generate professional case plans — all in one place.
           </p>
         </div>
