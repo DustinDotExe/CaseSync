@@ -81,7 +81,9 @@ service cloud.firestore {
              (!('goals' in data) || (data.goals is list && data.goals.size() <= 50)) &&
              (!('completedGoals' in data) || (data.completedGoals is list && data.completedGoals.size() <= 50)) &&
              (!('notes' in data) || (data.notes is string && data.notes.size() <= 10000)) &&
-             (!('irasDomains' in data) || (data.irasDomains is list && data.irasDomains.size() <= 20));
+             (!('irasDomains' in data) || (data.irasDomains is list && data.irasDomains.size() <= 20)) &&
+             (!('phaseUpdate' in data) || data.phaseUpdate == null || data.phaseUpdate is string) &&
+             (!('shareToken' in data) || data.shareToken == null || data.shareToken is string);
     }
 
     // request.resource.data for an update is the full merged document, so all fields are present
@@ -95,7 +97,74 @@ service cloud.firestore {
              (!('goals' in data) || (data.goals is list && data.goals.size() <= 50)) &&
              (!('completedGoals' in data) || (data.completedGoals is list && data.completedGoals.size() <= 50)) &&
              (!('notes' in data) || (data.notes is string && data.notes.size() <= 10000)) &&
-             (!('irasDomains' in data) || (data.irasDomains is list && data.irasDomains.size() <= 20));
+             (!('irasDomains' in data) || (data.irasDomains is list && data.irasDomains.size() <= 20)) &&
+             (!('phaseUpdate' in data) || data.phaseUpdate == null || data.phaseUpdate is string) &&
+             (!('shareToken' in data) || data.shareToken == null || data.shareToken is string);
+    }
+
+    function isValidSignature(sig) {
+      return sig is map &&
+             sig.keys().hasAll(['name', 'signedAt', 'type']) &&
+             sig.name is string && sig.name.size() > 0 && sig.name.size() <= 100 &&
+             sig.signedAt is string &&
+             sig.type in ['drawn', 'typed'] &&
+             (!('imageData' in sig) || sig.imageData is string);
+    }
+
+    function isValidPortalDocument(data) {
+      return data.keys().hasAll([
+               'participantId',
+               'uid',
+               'caseManagerName',
+               'caseManagerTitle',
+               'name',
+               'caseNumber',
+               'currentPhase',
+               'goals',
+               'completedGoals',
+               'notes',
+               'milestones',
+               'irasDomains',
+               'phaseUpdate',
+               'milestonePhaseLabels',
+               'updatedAt'
+             ]) &&
+             data.keys().hasOnly([
+               'participantId',
+               'uid',
+               'caseManagerName',
+               'caseManagerTitle',
+               'name',
+               'caseNumber',
+               'currentPhase',
+               'goals',
+               'completedGoals',
+               'notes',
+               'milestones',
+               'irasDomains',
+               'phaseUpdate',
+               'milestonePhaseLabels',
+               'createdAt',
+               'updatedAt',
+               'caseManagerSignature',
+               'participantSignature'
+             ]) &&
+             data.participantId is string &&
+             data.uid is string &&
+             data.caseManagerName is string && data.caseManagerName.size() <= 100 &&
+             data.caseManagerTitle is string && data.caseManagerTitle.size() <= 100 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.caseNumber is string && data.caseNumber.size() > 0 && data.caseNumber.size() <= 50 &&
+             data.currentPhase is int && data.currentPhase >= 1 && data.currentPhase <= 10 &&
+             data.goals is list && data.goals.size() <= 50 &&
+             data.completedGoals is list && data.completedGoals.size() <= 50 &&
+             data.notes is string && data.notes.size() <= 10000 &&
+             data.milestones is map &&
+             data.irasDomains is list && data.irasDomains.size() <= 20 &&
+             (data.phaseUpdate == null || data.phaseUpdate is string) &&
+             data.milestonePhaseLabels is list && data.milestonePhaseLabels.size() <= 10 &&
+             (!('caseManagerSignature' in data) || isValidSignature(data.caseManagerSignature)) &&
+             (!('participantSignature' in data) || isValidSignature(data.participantSignature));
     }
 
     // ===============================================================
@@ -134,6 +203,24 @@ service cloud.firestore {
                        isValidParticipantUpdate(request.resource.data) &&
                        request.resource.data.uid == resource.data.uid;
       allow delete: if isDocOwner();
+    }
+
+    match /participantPortals/{token} {
+      // Anyone with the token URL can read the portal document
+      allow read: if true;
+      // Only the owning case manager can create
+      allow create: if isAuthenticated() &&
+                       request.resource.data.uid == request.auth.uid &&
+                       isValidPortalDocument(request.resource.data);
+      // Case manager can update anything they own; anyone can update only participantSignature
+      allow update: if (isAuthenticated() &&
+                        resource.data.uid == request.auth.uid &&
+                        request.resource.data.uid == resource.data.uid &&
+                        isValidPortalDocument(request.resource.data)) ||
+                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantSignature']) &&
+                        isValidSignature(request.resource.data.participantSignature));
+      // Only the owning case manager can revoke (delete)
+      allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
     }
   }
 }

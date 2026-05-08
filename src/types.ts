@@ -82,6 +82,13 @@ export const DEFAULT_MILESTONE_PHASES: MilestonePhase[] = [
 
 export type Milestones = Record<string, boolean>;
 
+export interface Signature {
+  name: string;
+  signedAt: string; // ISO timestamp
+  type: 'drawn' | 'typed';
+  imageData?: string; // base64 PNG for drawn signatures
+}
+
 export interface Participant {
   id: string;
   name: string;
@@ -93,9 +100,31 @@ export interface Participant {
   irasDomains: string[];
   completedGoals?: string[]; // contains GoalEntry IDs
   phaseUpdate?: string; // YYYY-MM-DD target date for phase advancement
+  shareToken?: string;
   uid: string;
   createdAt: any;
   updatedAt: any;
+}
+
+export interface ParticipantPortal {
+  participantId: string;
+  uid: string;
+  caseManagerName: string;
+  caseManagerTitle: string;
+  name: string;
+  caseNumber: string;
+  currentPhase: number;
+  goals: GoalEntry[];
+  completedGoals: string[];
+  notes: string;
+  milestones: Milestones;
+  irasDomains: string[];
+  phaseUpdate?: string | null;
+  milestonePhaseLabels: string[];
+  createdAt: any;
+  updatedAt: any;
+  caseManagerSignature?: Signature;
+  participantSignature?: Signature;
 }
 
 export interface StoredGoalTemplate {

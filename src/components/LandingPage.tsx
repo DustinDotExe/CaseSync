@@ -41,11 +41,11 @@ export default function LandingPage() {
       {/* Nav */}
       <header className="absolute top-0 left-0 right-0 z-10 px-6 py-5 flex items-center justify-between max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-2.5">
-          <CasePlanrLogo className="w-8 h-8 text-burnt-peach-600" />
-          <span className="text-xl font-black text-slate-900 tracking-tight">CasePlanr</span>
+          <CasePlanrLogo className="w-12 h-12 text-burnt-peach-600" />
+          <span className="text-2xl font-black text-slate-900 tracking-tight">CasePlanr</span>
         </div>
         <a
-          href="/app"
+          href="/cases"
           className="px-4 py-2 bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white text-sm font-bold rounded-xl transition-colors"
         >
           Sign In

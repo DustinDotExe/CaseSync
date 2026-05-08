@@ -26,6 +26,13 @@
   }
 }
 
+.signature-script {
+  font-family: "Brush Script MT", "Segoe Script", "Lucida Handwriting", cursive;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;
 }
@@ -237,50 +244,83 @@
   @page {
     size: letter portrait;
     margin: 0.75in 0.75in 0.6in;
-    @bottom-center {
-      content: "(Continued on Next Page)";
-      font-size: 11pt;
-      color: #94a3b8;
-      font-family: sans-serif;
-      vertical-align: top;
-    }
-  }
-
-  @page :last {
-    margin: 0.75in;
-    @bottom-center {
-      content: "";
-    }
   }
 
   html, body {
     background: white !important;
     height: auto !important;
+    min-height: 0 !important;
     overflow: visible !important;
-    /* Preserve background colors (badges, accents) */
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
 
-  /* ── Isolate the report card ─────────────────────────────── */
-  /* Hide the entire page, then reveal only the report.        */
-  /* beforeprint removes .dark so colors are always light.     */
-  body * { visibility: hidden; }
+  /* ── Free overflow/height constraints on ancestor chain ─── */
+  /* Without this, overflow-hidden + h-screen clip content     */
+  /* to a single page and position: absolute lands incorrectly. */
+  [data-app-root] {
+    background: white !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  [data-app-layout] {
+    background: white !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    display: block !important;
+  }
+  [data-main-scroll] {
+    background: white !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    display: block !important;
+    padding-bottom: 0 !important;
+  }
+  /* Strip outer content-wrapper padding/spacing so report starts flush */
+  [data-participant-content] {
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+  }
+  /* Zero all direct-child margins (space-y-* from hidden no-print siblings) */
+  [data-participant-content] > * {
+    margin-top: 0 !important;
+  }
+  /* Remove tab-panel top margin */
+  [data-main-scroll] [role="tabpanel"] {
+    margin-top: 0 !important;
+  }
 
-  [data-report-container],
-  [data-report-container] * { visibility: visible; }
+  /* ── Hide app chrome ─────────────────────────────────────── */
+  .no-print {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
 
+  /* ── Report container — stays in normal flow for pagination ─ */
   [data-report-container] {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
+    background: white !important;
     margin: 0 !important;
     padding: 0 !important;
   }
 
-  /* ── Hide interactive-only UI in print ──────────────────── */
-  .no-print { display: none !important; }
+  [data-report-container],
+  [data-report-container] > div,
+  [data-report-container] [data-slot="card"],
+  [data-report-container] [data-slot="card-header"],
+  [data-report-container] [data-slot="card-content"] {
+    background: white !important;
+  }
 
   /* ── Card layout ─────────────────────────────────────────── */
   [data-report-container] .max-w-5xl {
@@ -334,15 +374,26 @@
   }
 
   /* ── Page-break control ──────────────────────────────────── */
-  section {
-    break-inside: avoid;
-    page-break-inside: avoid;
-  }
+  /* Don't avoid breaks on entire sections — that creates large  */
+  /* bottom-of-page gaps. Only protect small indivisible items.  */
   h2, h3 {
     break-after: avoid;
     page-break-after: avoid;
   }
-  [data-report-container] .pt-12 {
+  /* Keep individual goal rows intact */
+  [data-report-container] .border-l-2 {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* ── Notes box: no min-height in print ───────────────────── */
+  [data-report-container] .min-h-\[100px\] {
+    min-height: 0 !important;
+  }
+
+  /* ── Signature block ─────────────────────────────────────── */
+  [data-signature-block] {
+    display: block !important;
     break-inside: avoid;
     page-break-inside: avoid;
   }
@@ -483,4 +534,11 @@
   html {
     @apply font-sans;
     }
+}
+
+/* Selected day: white text, no hover change */
+[data-selected] button,
+[data-selected] button:hover {
+  color: white !important;
+  background-color: transparent !important;
 }

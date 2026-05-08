@@ -1,7 +1,7 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, type ReactNode } from 'react';
 import { db } from '../firebase';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Participant, CurrentUser } from '../types';
+import { Participant, CurrentUser, ParticipantPortal, Signature } from '../types';
 import { logAuditEvent, retractAuditEntry } from '../services/auditService';
 import { Card, CardContent, CardHeader } from './ui/card';
 import { Button } from './ui/button';
@@ -20,21 +20,68 @@ function isOverdue(iso: string): boolean {
 }
 import CasePlanrLogo from './CasePlanrLogo';
 
-export default function CourtReport({ participant, currentUser }: { participant: Participant; currentUser: CurrentUser }) {
+function formatSignedDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+function PrintSignatureSlot({ sig, label, align = 'left' }: { sig?: Signature; label: string; align?: 'left' | 'right' }) {
+  return (
+    <div className={`space-y-1 w-[42%] max-w-[15rem] ${align === 'right' ? 'ml-auto text-right' : ''}`}>
+      <div className={`border-b border-slate-300 h-10 flex items-end ${align === 'right' ? 'justify-end' : 'justify-start'}`}>
+        {sig?.type === 'drawn' && sig.imageData ? (
+          <img src={sig.imageData} alt={`${label} signature`} className="max-h-8 max-w-[92%] object-contain" />
+        ) : sig ? (
+          <span className="signature-script text-2xl font-normal text-slate-800 leading-none">{sig.name}</span>
+        ) : null}
+      </div>
+      <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">{label}</p>
+      {sig && (
+        <p className="text-[10px] font-semibold text-slate-500">
+          Date signed: {formatSignedDate(sig.signedAt)}
+        </p>
+      )}
+    </div>
+  );
+}
+
+export default function CourtReport({
+  participant,
+  currentUser,
+  portalDoc,
+  actions,
+}: {
+  participant: Participant;
+  currentUser: CurrentUser;
+  portalDoc?: ParticipantPortal | null;
+  actions?: ReactNode;
+}) {
   const reportRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const removeDark = () => document.documentElement.classList.remove('dark');
-    const restoreDark = () => {
+    const getSigBlock = () =>
+      reportRef.current?.querySelector('[data-signature-block]') as HTMLElement | null;
+
+    const beforePrint = () => {
+      document.documentElement.classList.remove('dark');
+      const sig = getSigBlock();
+      if (sig) sig.style.display = 'block';
+    };
+    const afterPrint = () => {
       if (localStorage.getItem('theme') === 'dark') {
         document.documentElement.classList.add('dark');
       }
+      const sig = getSigBlock();
+      if (sig) sig.style.display = '';
     };
-    window.addEventListener('beforeprint', removeDark);
-    window.addEventListener('afterprint', restoreDark);
+    window.addEventListener('beforeprint', beforePrint);
+    window.addEventListener('afterprint', afterPrint);
     return () => {
-      window.removeEventListener('beforeprint', removeDark);
-      window.removeEventListener('afterprint', restoreDark);
+      window.removeEventListener('beforeprint', beforePrint);
+      window.removeEventListener('afterprint', afterPrint);
     };
   }, []);
 
@@ -42,10 +89,12 @@ export default function CourtReport({ participant, currentUser }: { participant:
     <div className="space-y-6">
       <div ref={reportRef} data-report-container className="print:m-0 print:p-0">
         <Card className="bg-white dark:bg-slate-900 max-w-5xl mx-auto overflow-visible print:max-w-none print:shadow-none print:border-none shadow-lg border-slate-200 dark:border-slate-800">
-        <CardHeader className="bg-white dark:bg-slate-900 space-y-4">
+        <CardHeader className="bg-white dark:bg-slate-900 space-y-3">
           <div className="grid grid-cols-3 items-start gap-4">
             <div className="col-span-2 space-y-1">
-              <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{participant.name} / Case Plan</h2>
+              <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+                {participant.name} /<br className="sm:hidden print:hidden" /> Case Plan
+              </h2>
               <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">Created on {new Date().toLocaleDateString()}</p>
             </div>
             <div className="hidden sm:flex items-center justify-center gap-2 font-bold text-lg md:text-xl text-slate-900 dark:text-slate-100">
@@ -57,16 +106,16 @@ export default function CourtReport({ participant, currentUser }: { participant:
           <Separator className="bg-slate-100 dark:bg-slate-800" />
 
           {/* Participant info strip */}
-          <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-2 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
-            <div className="text-center py-2 sm:py-0">
+          <section className="grid grid-cols-1 sm:grid-cols-3 gap-0 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+            <div className="text-center py-1.5 pt-0 sm:py-0">
               <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Participant</p>
               <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.name}</p>
             </div>
-            <div className="text-center py-2 sm:py-0">
+            <div className="text-center py-1.5 sm:py-0">
               <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Current Phase</p>
               <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.currentPhase}</p>
             </div>
-            <div className="text-center py-2 sm:py-0">
+            <div className="text-center py-1.5 pb-0 sm:py-0">
               <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Case Number</p>
               <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.caseNumber}</p>
             </div>
@@ -211,43 +260,35 @@ export default function CourtReport({ participant, currentUser }: { participant:
             </div>
           </section>
 
-          {/* Footer */}
-          <div className="hidden print:block pt-12 border-t border-slate-100 mt-12">
-            <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-8">
+          {/* Signature block — hidden on screen, shown by [data-signature-block] rule in print CSS */}
+          <div data-signature-block className="hidden mt-6 pt-6 border-t border-slate-200">
+            <p className="text-xs text-slate-500 leading-relaxed mb-6">
               By signing below, I acknowledge that I have reviewed this plan, understand what is expected of me, and agree to fulfill the outlined goals, objectives, and tasks to the best of my ability.
             </p>
-            <div className="flex flex-col sm:flex-row justify-between items-end gap-8 mb-8">
-              <div className="space-y-1 w-full sm:w-auto">
-                <div className="w-full sm:w-72 border-b border-slate-400 dark:border-slate-600 h-8"></div>
-                <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Case Manager Signature</p>
-              </div>
-              <div className="space-y-1 w-full sm:w-auto">
-                <div className="w-full sm:w-72 border-b border-slate-400 dark:border-slate-600 h-8"></div>
-                <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider text-left sm:text-right">Participant Signature</p>
-              </div>
+            <div className="flex flex-row justify-between items-end gap-6">
+              <PrintSignatureSlot sig={portalDoc?.caseManagerSignature} label="Case Manager Signature" />
+              <PrintSignatureSlot sig={portalDoc?.participantSignature} label="Participant Signature" align="right" />
             </div>
-            <div className="text-center pt-4 border-t border-slate-50 dark:border-slate-900">
-              <p className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 tracking-wider">Report ID</p>
-              <p className="text-[10px] font-mono text-slate-300 dark:text-slate-700">{participant.id.toUpperCase()}</p>
-            </div>
+            {participant.shareToken && (
+              <p className="mt-4 text-center text-[10px] font-semibold text-slate-400 tracking-wide">
+                Document ID: {participant.shareToken}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
 
       </div>
 
-      <div className="flex flex-col items-end gap-1 no-print mt-8 max-w-5xl mx-auto">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 no-print mt-8 max-w-5xl mx-auto">
+        {actions}
         <Button
-          variant="outline"
           onClick={() => window.print()}
-          className="w-full sm:w-auto border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-200 font-semibold shadow-sm transition-all active:scale-[0.98]"
+          className="w-full sm:w-auto bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-semibold shadow-sm shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 transition-all active:scale-[0.98]"
         >
           <Printer className="w-4 h-4" />
           Print / Save as PDF
         </Button>
-        <p className="text-[11px] text-slate-400 dark:text-slate-600">
-          Choose "Save as PDF" in the print dialog to download
-        </p>
       </div>
     </div>
   );

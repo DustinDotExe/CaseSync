@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, setDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, addDoc, serverTimestamp, deleteDoc, doc, updateDoc, setDoc, deleteField } from 'firebase/firestore';
 import { logAuditEvent } from './services/auditService';
 import { Button } from './components/ui/button';
 import { Card, CardContent } from './components/ui/card';
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight, CalendarDays } from 'lucide-react';
+import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight, ChevronDown, ChevronUp, CalendarDays, LogOut, Link2 } from 'lucide-react';
 import { 
   Sheet, 
   SheetContent, 
@@ -20,15 +20,74 @@ import {
   SheetHeader,
   SheetTitle
 } from './components/ui/sheet';
-import { Participant, CurrentUser, StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES, normalizeGoals } from './types';
+import { Participant, CurrentUser, StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES, normalizeGoals, Signature, ParticipantPortal } from './types';
 import CasePlanEditor from './components/CasePlanEditor';
+import ShareAndSign from './components/ShareAndSign';
 import AIGoalRefiner, { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefiner';
 import CourtReport from './components/CourtReport';
 import AuditLog from './components/AuditLog';
 import UserSettings from './components/UserSettings';
 import CasePlanrLogo from './components/CasePlanrLogo';
 import { DatePicker } from './components/ui/date-picker';
+import CaseloadDashboard from './components/CaseloadDashboard';
 import { cn } from './lib/utils';
+
+function createShareToken() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  const bytes = new Uint8Array(16);
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+  }
+
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
+function buildPortalPayload(
+  participant: Participant,
+  caseManagerUid: string,
+  caseManagerName: string,
+  caseManagerTitle: string,
+  milestonePhases: MilestonePhase[]
+) {
+  return {
+    participantId: participant.id,
+    uid: caseManagerUid,
+    caseManagerName: caseManagerName || caseManagerTitle || 'Case Manager',
+    caseManagerTitle: caseManagerTitle || 'Case Manager',
+    name: participant.name || '',
+    caseNumber: participant.caseNumber || '',
+    currentPhase: participant.currentPhase || 1,
+    goals: (participant.goals || []).map(goal => ({
+      id: goal.id,
+      text: goal.text || '',
+      ...(goal.dueDate ? { dueDate: goal.dueDate } : {}),
+      ...(goal.reviewedOn ? { reviewedOn: goal.reviewedOn } : {}),
+    })),
+    completedGoals: participant.completedGoals || [],
+    notes: participant.notes || '',
+    milestones: participant.milestones || {},
+    irasDomains: participant.irasDomains || [],
+    phaseUpdate: participant.phaseUpdate || null,
+    milestonePhaseLabels: milestonePhases.map(mp => mp.label || ''),
+  };
+}
+
+function wrapSecureLinkError(action: string, err: unknown) {
+  const message = err instanceof Error ? err.message : String(err);
+  const wrapped = new Error(`${action}: ${message}`);
+  if (typeof err === 'object' && err && 'code' in err) {
+    (wrapped as Error & { code?: unknown }).code = (err as { code?: unknown }).code;
+  }
+  return wrapped;
+}
 
 export default function App() {
   const [user, loading] = useAuthState(auth);
@@ -36,7 +95,10 @@ export default function App() {
   const [selectedParticipantId, setSelectedParticipantId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [newParticipant, setNewParticipant] = useState({ name: '', caseNumber: '' });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [participantsCollapsed, setParticipantsCollapsed] = useState(false);
+  const [showDashboard, setShowDashboard] = useState(false);
+  const [newParticipant, setNewParticipant] = useState({ name: '', caseNumber: '', phaseUpdate: '' });
   const [searchTerm, setSearchTerm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
@@ -51,6 +113,8 @@ export default function App() {
   const [sortBy, setSortBy] = useState<'name' | 'phase'>('name');
   const [isEditingParticipant, setIsEditingParticipant] = useState(false);
   const [activeTab, setActiveTab] = useState('plan');
+  const [shareAndSignOpen, setShareAndSignOpen] = useState(false);
+  const shareAndSignRef = useRef<HTMLDivElement>(null);
   const [editedName, setEditedName] = useState('');
   const [editedCaseNumber, setEditedCaseNumber] = useState('');
   const [userTitle, setUserTitle] = useState('Court Case Manager');
@@ -110,10 +174,48 @@ export default function App() {
 
   useEffect(() => {
     setSelectedParticipantId(null);
+    setShowDashboard(false);
     setActiveTab('plan');
+    setShareAndSignOpen(false);
     setSettingsOpen(false);
     setSidebarOpen(false);
   }, [user?.uid]);
+
+  useEffect(() => {
+    if (activeTab !== 'report' || !shareAndSignOpen) return;
+    const frame = requestAnimationFrame(() => {
+      shareAndSignRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeTab, shareAndSignOpen]);
+
+  const handleCloseSettings = () => {
+    setSettingsOpen(false);
+    setSelectedParticipantId(null);
+    setShowDashboard(false);
+    setSidebarCollapsed(false);
+    setSidebarOpen(false);
+  };
+
+  const handleOpenDashboard = () => {
+    setShowDashboard(true);
+    setSelectedParticipantId(null);
+    setSettingsOpen(false);
+    setShareAndSignOpen(false);
+    setSidebarCollapsed(false);
+    setSidebarOpen(false);
+  };
+
+  const handleGoHome = () => {
+    setSelectedParticipantId(null);
+    setShowDashboard(false);
+    setSettingsOpen(false);
+    setShareAndSignOpen(false);
+    setSidebarCollapsed(false);
+    setActiveTab('plan');
+    setIsAdding(false);
+    setIsEditingParticipant(false);
+  };
 
   useEffect(() => {
     if (user) {
@@ -157,6 +259,18 @@ export default function App() {
       return () => unsubscribe();
     }
   }, [user]);
+
+  const [portalDoc, setPortalDoc] = useState<ParticipantPortal | null>(null);
+
+  // Subscribe to portal document whenever selected participant has a shareToken
+  useEffect(() => {
+    const shareToken = participants.find(p => p.id === selectedParticipantId)?.shareToken;
+    if (!shareToken) { setPortalDoc(null); return; }
+    const unsubscribe = onSnapshot(doc(db, 'participantPortals', shareToken), (snap) => {
+      setPortalDoc(snap.exists() ? (snap.data() as ParticipantPortal) : null);
+    });
+    return () => unsubscribe();
+  }, [selectedParticipantId, participants]);
 
   const selectedParticipant = participants.find(p => p.id === selectedParticipantId) || null;
   const currentUser: CurrentUser = user
@@ -252,6 +366,7 @@ export default function App() {
     try {
       const docRef = await addDoc(collection(db, 'participants'), {
         ...newParticipant,
+        phaseUpdate: newParticipant.phaseUpdate || null,
         currentPhase: 1,
         goals: [],
         notes: '',
@@ -269,10 +384,11 @@ export default function App() {
         details: { field: 'caseNumber', newValue: newParticipant.caseNumber },
         currentUser: { uid: user.uid, displayName: user.displayName, email: user.email }
       });
-      setNewParticipant({ name: '', caseNumber: '' });
+      setNewParticipant({ name: '', caseNumber: '', phaseUpdate: '' });
       setIsAdding(false);
       setSelectedParticipantId(docRef.id);
       setActiveTab('plan');
+      setShowDashboard(false);
       setSidebarOpen(false);
     } catch (err) {
       console.error("Add Error:", err);
@@ -356,6 +472,88 @@ export default function App() {
     }
   };
 
+  const handleGenerateShareLink = async () => {
+    if (!selectedParticipant || !user) return;
+    try {
+      const token = createShareToken();
+      const portalData = {
+        ...buildPortalPayload(selectedParticipant, user.uid, user.displayName || '', userTitle, milestonePhases),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      };
+      try {
+        await setDoc(doc(db, 'participantPortals', token), portalData);
+      } catch (err) {
+        throw wrapSecureLinkError('creating participant portal', err);
+      }
+      try {
+        await updateDoc(doc(db, 'participants', selectedParticipant.id), {
+          shareToken: token,
+          updatedAt: serverTimestamp(),
+        });
+      } catch (err) {
+        await deleteDoc(doc(db, 'participantPortals', token)).catch(() => undefined);
+        throw wrapSecureLinkError('saving link token to participant', err);
+      }
+    } catch (err) {
+      console.error('Generate share link error:', err);
+      throw err;
+    }
+  };
+
+  const handleRevokeShareLink = async () => {
+    if (!selectedParticipant?.shareToken || !user) return;
+    try {
+      await deleteDoc(doc(db, 'participantPortals', selectedParticipant.shareToken));
+      await updateDoc(doc(db, 'participants', selectedParticipant.id), {
+        shareToken: null,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Revoke share link error:', err);
+      throw err;
+    }
+  };
+
+  const handleSyncPortal = async () => {
+    if (!selectedParticipant?.shareToken || !user) return;
+    try {
+      await updateDoc(doc(db, 'participantPortals', selectedParticipant.shareToken), {
+        ...buildPortalPayload(selectedParticipant, user.uid, user.displayName || '', userTitle, milestonePhases),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Sync portal error:', err);
+      throw err;
+    }
+  };
+
+  const handleSignAsCaseManager = async (sig: Signature) => {
+    if (!selectedParticipant?.shareToken || !user) return;
+    try {
+      await updateDoc(doc(db, 'participantPortals', selectedParticipant.shareToken), {
+        caseManagerSignature: sig,
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Case manager sign error:', err);
+      throw err;
+    }
+  };
+
+  const handleRemovePortalSignature = async (signatureField: 'caseManagerSignature' | 'participantSignature') => {
+    if (!selectedParticipant?.shareToken || !user) return;
+    try {
+      await updateDoc(doc(db, 'participantPortals', selectedParticipant.shareToken), {
+        [signatureField]: deleteField(),
+        updatedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.error('Remove signature error:', err);
+      throw err;
+    }
+  };
+
   const handlePaletteChange = (color: 'orange' | 'blue' | 'red' | 'green' | 'purple') => {
     setPaletteColor(color);
     localStorage.setItem('paletteColor', color);
@@ -398,52 +596,64 @@ export default function App() {
 
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
-      <div className="p-6 space-y-4 shrink-0">
+      <div className="px-4 pt-3 pb-3 shrink-0">
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-wider text-xs">Participants</h2>
+          <button
+            onClick={() => setParticipantsCollapsed(v => !v)}
+            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-800 dark:text-slate-200 hover:text-slate-600 dark:hover:text-slate-400 transition-colors"
+          >
+            <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", participantsCollapsed && "-rotate-90")} />
+            Participants
+          </button>
           <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-900/20 rounded-full">
             <Plus className="w-5 h-5" />
           </Button>
         </div>
-        
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
-          <Input
-            placeholder="Search by name or case..."
-            value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
-            className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-burnt-peach-500 h-10 rounded-xl"
-          />
-        </div>
 
-        <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
-          <button
-            onClick={() => setSortBy('name')}
-            className={cn(
-              "flex-1 text-xs font-semibold py-1 rounded-md transition-all",
-              sortBy === 'name'
-                ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-            )}
-          >
-            Last Name
-          </button>
-          <button
-            onClick={() => setSortBy('phase')}
-            className={cn(
-              "flex-1 text-xs font-semibold py-1 rounded-md transition-all",
-              sortBy === 'phase'
-                ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-            )}
-          >
-            Phase
-          </button>
-        </div>
+        {!participantsCollapsed && (
+          <div className="mt-3 space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
+              <Input
+                placeholder="Search by name or case..."
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-burnt-peach-500 h-10 rounded-xl"
+              />
+            </div>
+
+            <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5">
+              <button
+                onClick={() => setSortBy('name')}
+                className={cn(
+                  "flex-1 text-xs font-semibold py-1 rounded-md transition-all",
+                  sortBy === 'name'
+                    ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Last Name
+              </button>
+              <button
+                onClick={() => setSortBy('phase')}
+                className={cn(
+                  "flex-1 text-xs font-semibold py-1 rounded-md transition-all",
+                  sortBy === 'phase'
+                    ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm"
+                    : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                )}
+              >
+                Phase
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
-      <div className="flex-1 min-h-0 overflow-y-auto pb-6 custom-scrollbar">
-        <div className="space-y-2 px-4">
+      <div className="flex-1 min-h-0">
+        {(!participantsCollapsed || isAdding) && (
+        <div className="h-full overflow-y-auto pb-6 custom-scrollbar">
+        <div className="space-y-2 px-4 pt-2">
           {isAdding && (
             <Card className="mb-4 border-burnt-peach-200 dark:border-burnt-peach-900 bg-burnt-peach-50/30 dark:bg-burnt-peach-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
               <CardContent className="p-4">
@@ -461,12 +671,21 @@ export default function App() {
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="case" className="text-[11px] uppercase text-slate-500 dark:text-slate-400 font-semibold tracking-wider">Case Number</Label>
-                    <Input 
-                      id="case" 
-                      value={newParticipant.caseNumber} 
+                    <Input
+                      id="case"
+                      value={newParticipant.caseNumber}
                       onChange={e => setNewParticipant(prev => ({ ...prev, caseNumber: e.target.value }))}
                       className="h-9 bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 font-mono"
                       placeholder="2024-CR-0000"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[11px] uppercase text-slate-500 dark:text-slate-400 font-semibold tracking-wider">Expected Phase Date</Label>
+                    <DatePicker
+                      value={newParticipant.phaseUpdate}
+                      onChange={date => setNewParticipant(prev => ({ ...prev, phaseUpdate: date }))}
+                      placeholder="Set a target date"
+                      showQuick={false}
                     />
                   </div>
                   <div className="flex gap-2 pt-2">
@@ -478,7 +697,7 @@ export default function App() {
             </Card>
           )}
 
-          {filteredParticipants.length === 0 && !isAdding && (
+          {filteredParticipants.length === 0 && !isAdding && !participantsCollapsed && (
             <div className="text-center py-20 px-6">
               <div className="bg-slate-50 dark:bg-slate-800 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Search className="w-6 h-6 text-slate-200 dark:text-slate-700" />
@@ -487,10 +706,10 @@ export default function App() {
             </div>
           )}
 
-          {filteredParticipants.map(p => (
+          {!isAdding && filteredParticipants.map(p => (
             <button
               key={p.id}
-              onClick={() => { setSelectedParticipantId(p.id); setActiveTab('plan'); }}
+              onClick={() => { setSelectedParticipantId(p.id); setActiveTab('plan'); setSettingsOpen(false); setShowDashboard(false); }}
               className={cn(
                 "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative border",
                 selectedParticipantId === p.id 
@@ -519,6 +738,39 @@ export default function App() {
             </button>
           ))}
         </div>
+        </div>
+        )}
+      </div>
+
+      {/* Bottom-anchored footer */}
+      <div className="shrink-0 border-t border-slate-100 dark:border-slate-800">
+        <button
+          onClick={handleOpenDashboard}
+          className={cn(
+            "w-full text-left px-4 py-3 text-xs font-bold transition-colors",
+            showDashboard && !selectedParticipantId && !settingsOpen
+              ? "text-burnt-peach-600 dark:text-burnt-peach-400"
+              : "text-slate-700 dark:text-slate-300 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400"
+          )}
+        >
+          My Caseload Dashboard
+        </button>
+        <div className="mx-4 border-t border-slate-100 dark:border-slate-800" />
+      </div>
+      <div className="shrink-0 px-4 py-3 flex items-center gap-3">
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-bold text-slate-700 dark:text-slate-300 truncate">{user.displayName}</p>
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold truncate">{userTitle}</p>
+        </div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => signOut(auth)}
+          className="h-8 w-8 shrink-0 text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-full"
+          title="Sign out"
+        >
+          <LogOut className="w-4 h-4" />
+        </Button>
       </div>
     </div>
   );
@@ -526,6 +778,7 @@ export default function App() {
   const startAddingParticipant = () => {
     setIsAdding(true);
     setSidebarOpen(true);
+    setSidebarCollapsed(false);
   };
 
   if (loading) return (
@@ -762,11 +1015,12 @@ export default function App() {
   );
 
   return (
-    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300">
-      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0"></div>
+    <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300" data-app-root>
+      <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0 no-print"></div>
       {/* Header */}
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between z-20 shadow-sm">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-4 md:px-8 py-4 flex items-center justify-between z-20 shadow-sm no-print">
         <div className="flex items-center gap-3">
+          {/* Mobile: sheet trigger */}
           <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
             <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden text-slate-500" />}>
               <Menu className="w-5 h-5" />
@@ -782,9 +1036,15 @@ export default function App() {
             </SheetContent>
           </Sheet>
 
-          <CasePlanrLogo className="w-9 h-9 drop-shadow-md hidden md:block" />
-          <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CasePlanr</h1>
-          <Badge variant="outline" className="hidden sm:inline-flex ml-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 font-mono text-[10px]">v1.0.0</Badge>
+          <button
+            type="button"
+            onClick={handleGoHome}
+            className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-burnt-peach-500"
+          >
+            <CasePlanrLogo className="w-9 h-9 drop-shadow-md hidden md:block" />
+            <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CasePlanr</h1>
+            <Badge variant="outline" className="hidden sm:inline-flex ml-2 bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 font-mono text-[10px]">v1.0.0</Badge>
+          </button>
         </div>
         
         <div className="flex items-center gap-2 md:gap-6">
@@ -797,15 +1057,23 @@ export default function App() {
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </Button>
           <div className="hidden md:block h-8 w-[1px] bg-slate-200 dark:bg-slate-800"></div>
-          <div className="hidden md:flex flex-col items-end">
+          <button
+            type="button"
+            onClick={handleOpenDashboard}
+            className="hidden md:flex flex-col items-end rounded-xl px-2 py-1 text-right transition-colors hover:bg-slate-100 dark:hover:bg-slate-800"
+            title="Open dashboard"
+          >
             <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{user.displayName}</span>
             <span className="text-[11px] text-slate-400 dark:text-slate-500 uppercase tracking-wider font-semibold">{userTitle}</span>
-          </div>
+          </button>
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setSettingsOpen(true)}
-            className="text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full"
+            onClick={() => settingsOpen ? handleCloseSettings() : (() => { setSettingsOpen(true); setShowDashboard(false); setSelectedParticipantId(null); setSidebarCollapsed(true); })()}
+            className={cn(
+              "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full",
+              settingsOpen && "bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white"
+            )}
             title="Settings"
           >
             <Settings className="w-5 h-5" />
@@ -813,17 +1081,46 @@ export default function App() {
         </div>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative" data-app-layout>
         {/* Sidebar (Desktop) */}
-        <aside className="hidden md:flex w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex-col shadow-sm z-10 overflow-hidden">
+        <aside className={cn(
+          "hidden md:flex flex-col bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 shadow-sm z-10 overflow-hidden transition-[width] duration-300 no-print",
+          sidebarCollapsed ? "md:w-0 md:border-r-0" : "md:w-80"
+        )}>
           {renderSidebarContent()}
         </aside>
 
+        {/* Border trigger (desktop only) — zero-width flex item; trigger hangs off its left edge */}
+        <div className="hidden md:block relative shrink-0 w-0 z-20 no-print">
+          <div
+            onClick={() => setSidebarCollapsed(v => !v)}
+            className="absolute top-0 bottom-0 -left-1 w-2 cursor-col-resize group"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <div className="absolute left-1/2 -translate-x-1/2 inset-y-0 w-px bg-transparent group-hover:bg-burnt-peach-500/50 dark:group-hover:bg-burnt-peach-400/50 transition-colors duration-150" />
+          </div>
+        </div>
+
         {/* Main Content */}
-        <section className="flex-1 bg-slate-50 dark:bg-slate-950 overflow-y-auto custom-scrollbar transition-colors duration-300">
-          {selectedParticipant ? (
-            <div className="max-w-5xl mx-auto p-4 md:p-10 space-y-6 md:space-y-10 animate-in fade-in duration-500">
-              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <section className="flex-1 bg-slate-50 dark:bg-slate-950 overflow-y-auto custom-scrollbar transition-colors duration-300" data-main-scroll>
+          {settingsOpen ? (
+            <UserSettings
+              onClose={handleCloseSettings}
+              user={{ uid: user.uid, displayName: user.displayName, email: user.email }}
+              userTitle={userTitle}
+              isDark={isDark}
+              themePreference={themePreference}
+              onThemeChange={handleThemeChange}
+              paletteColor={paletteColor}
+              onPaletteChange={handlePaletteChange}
+              goalTemplates={goalTemplates}
+              onGoalTemplatesChange={setGoalTemplates}
+              milestonePhases={milestonePhases}
+              onMilestonePhasesChange={setMilestonePhases}
+            />
+          ) : selectedParticipant ? (
+            <div className="max-w-5xl mx-auto p-4 md:p-10 space-y-6 md:space-y-10 animate-in fade-in duration-500" data-participant-content>
+              <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 no-print">
                 <div className="space-y-2">
                   <div className="flex items-center gap-3">
                     {isEditingParticipant ? (
@@ -906,7 +1203,7 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800">
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm grid grid-cols-3 divide-x divide-slate-100 dark:divide-slate-800 no-print">
                   <div className="space-y-1 pr-3 sm:pr-5">
                     <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Current Phase</p>
                     <div className="flex items-center gap-1.5">
@@ -937,7 +1234,7 @@ export default function App() {
               </div>
 
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-[3.5px] h-14 rounded-2xl shadow-sm inline-flex w-auto">
+                <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-[3.5px] h-14 rounded-2xl shadow-sm inline-flex w-auto no-print">
                   <TabsTrigger value="plan" className="dark:data-active:bg-slate-800 dark:data-active:border-transparent dark:data-active:[box-shadow:inset_0_1px_0_rgba(255,255,255,0.08),0_1px_2px_rgba(0,0,0,0.4)] px-4 md:px-8 rounded-xl font-bold transition-all">
                     <LayoutDashboard className="w-4 h-4" />
                     <span className="hidden md:inline">Overview</span>
@@ -964,8 +1261,40 @@ export default function App() {
                   <AIGoalRefiner participant={selectedParticipant} currentUser={currentUser} goalTemplates={goalTemplates} />
                 </TabsContent>
 
-                <TabsContent value="report" className="mt-6 outline-none">
-                  <CourtReport participant={selectedParticipant} currentUser={currentUser} />
+                <TabsContent value="report" className="mt-6 outline-none space-y-6">
+                  <CourtReport
+                    participant={selectedParticipant}
+                    currentUser={currentUser}
+                    portalDoc={portalDoc}
+                    actions={(
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShareAndSignOpen(open => !open)}
+                        className="w-full sm:w-auto border-burnt-peach-200 dark:border-burnt-peach-800 bg-burnt-peach-50 dark:bg-burnt-peach-950/30 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/40 text-burnt-peach-700 dark:text-burnt-peach-300 font-semibold shadow-sm shadow-burnt-peach-100/60 dark:shadow-burnt-peach-900/10 transition-all active:scale-[0.98]"
+                      >
+                        <Link2 className="w-4 h-4" />
+                        Share & Sign
+                        {shareAndSignOpen ? <ChevronUp className="w-4 h-4 opacity-70" /> : <ChevronDown className="w-4 h-4 opacity-70" />}
+                      </Button>
+                    )}
+                  />
+                  {shareAndSignOpen && (
+                    <div ref={shareAndSignRef} className="max-w-5xl mx-auto no-print scroll-mt-6">
+                      <ShareAndSign
+                        participant={selectedParticipant}
+                        portalDoc={portalDoc}
+                        userTitle={userTitle}
+                        milestonePhases={milestonePhases}
+                        onGenerateLink={handleGenerateShareLink}
+                        onRevokeLink={handleRevokeShareLink}
+                        onSyncPortal={handleSyncPortal}
+                        onSignAsCaseManager={handleSignAsCaseManager}
+                        onRemoveSignature={handleRemovePortalSignature}
+                        onClose={() => setShareAndSignOpen(false)}
+                      />
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="history" className="mt-6 outline-none">
@@ -973,10 +1302,16 @@ export default function App() {
                 </TabsContent>
               </Tabs>
             </div>
+          ) : showDashboard ? (
+            <CaseloadDashboard
+              participants={participants}
+              milestonePhases={milestonePhases}
+              onSelectParticipant={(id) => { setSelectedParticipantId(id); setActiveTab('plan'); setShowDashboard(false); setSidebarOpen(false); }}
+              onAddParticipant={startAddingParticipant}
+            />
           ) : (
             <div className="h-full flex flex-col items-center justify-center p-10">
               <div className="relative mb-6">
-                <div className="absolute inset-0 bg-burnt-peach-100 dark:bg-burnt-peach-900/20 rounded-full blur-3xl opacity-40 animate-pulse"></div>
                 <CasePlanrLogo className="relative w-28 h-28 drop-shadow-xl" />
               </div>
               <div className="text-center max-w-md space-y-4">
@@ -1051,23 +1386,6 @@ export default function App() {
         </div>
       )}
 
-      {user && (
-        <UserSettings
-          open={settingsOpen}
-          onOpenChange={setSettingsOpen}
-          user={{ uid: user.uid, displayName: user.displayName, email: user.email }}
-          userTitle={userTitle}
-          isDark={isDark}
-          themePreference={themePreference}
-          onThemeChange={handleThemeChange}
-          paletteColor={paletteColor}
-          onPaletteChange={handlePaletteChange}
-          goalTemplates={goalTemplates}
-          onGoalTemplatesChange={setGoalTemplates}
-          milestonePhases={milestonePhases}
-          onMilestonePhasesChange={setMilestonePhases}
-        />
-      )}
     </div>
   );
 }

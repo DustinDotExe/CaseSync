@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { DayPicker } from 'react-day-picker';
 import { format, parseISO } from 'date-fns';
@@ -9,6 +9,22 @@ const BASE_QUICK = [
   { label: '30 days', days: 30, exactDate: undefined as string | undefined },
   { label: '90 days', days: 90, exactDate: undefined as string | undefined },
 ];
+
+function tryParseDate(raw: string): Date | null {
+  const s = raw.trim();
+  const m1 = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (m1) {
+    const [, mo, d, y] = m1;
+    const yr = y.length === 2 ? `20${y}` : y;
+    const dt = new Date(`${yr}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}T12:00:00`);
+    if (!isNaN(dt.getTime())) return dt;
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    const dt = new Date(`${s}T12:00:00`);
+    if (!isNaN(dt.getTime())) return dt;
+  }
+  return null;
+}
 
 function addDays(days: number): string {
   const d = new Date();
@@ -35,6 +51,23 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
   const [style, setStyle] = useState<React.CSSProperties>({});
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
+  const [inputText, setInputText] = useState(value ? format(parseISO(value), 'MM/dd/yyyy') : '');
+
+  useLayoutEffect(() => {
+    setInputText(value ? format(parseISO(value), 'MM/dd/yyyy') : '');
+  }, [value]);
+
+  const handleInputBlur = () => {
+    const raw = inputText.trim();
+    if (!raw) { onChange(''); return; }
+    const parsed = tryParseDate(raw);
+    if (parsed) {
+      onChange(format(parsed, 'yyyy-MM-dd'));
+      setInputText(format(parsed, 'MM/dd/yyyy'));
+    } else {
+      setInputText(value ? format(parseISO(value), 'MM/dd/yyyy') : '');
+    }
+  };
 
   const selected = value ? parseISO(value) : undefined;
 
@@ -115,32 +148,40 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
           )}
         </div>
       ) : (
-        <button
-          ref={triggerRef}
-          type="button"
-          onClick={() => setOpen(v => !v)}
-          className={cn(
-            'flex items-center gap-2 h-9 px-3 w-full rounded-lg border text-sm transition-colors bg-white dark:bg-slate-900',
-            value
-              ? 'border-burnt-peach-300 dark:border-burnt-peach-700 text-slate-700 dark:text-slate-300'
-              : 'border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500',
-            'hover:border-burnt-peach-400 dark:hover:border-burnt-peach-600 focus:outline-none focus:ring-2 focus:ring-burnt-peach-500'
-          )}
-        >
-          <CalendarDays className="w-4 h-4 text-burnt-peach-500 shrink-0" />
-          <span className="flex-1 text-left">
-            {value ? format(parseISO(value), 'MMM d, yyyy') : placeholder}
-          </span>
+        <div className="relative flex items-center">
+          <input
+            type="text"
+            value={inputText}
+            onChange={e => setInputText(e.target.value)}
+            onBlur={handleInputBlur}
+            onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+            placeholder={placeholder || 'MM/DD/YYYY'}
+            className={cn(
+              'w-full h-9 pl-3 rounded-lg border text-sm bg-white dark:bg-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-burnt-peach-500/30 focus:border-burnt-peach-400 dark:focus:border-burnt-peach-600 placeholder:text-slate-400 dark:placeholder:text-slate-500',
+              value
+                ? 'border-burnt-peach-300 dark:border-burnt-peach-700 text-slate-700 dark:text-slate-300'
+                : 'border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100',
+              value ? 'pr-16' : 'pr-9'
+            )}
+          />
           {value && (
-            <span
-              role="button"
-              onClick={e => { e.stopPropagation(); onChange(''); }}
-              className="text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
+            <button
+              type="button"
+              onClick={() => { onChange(''); setInputText(''); }}
+              className="absolute right-8 top-1/2 -translate-y-1/2 text-slate-300 hover:text-slate-500 dark:hover:text-slate-300 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
-            </span>
+            </button>
           )}
-        </button>
+          <button
+            ref={triggerRef}
+            type="button"
+            onClick={() => setOpen(v => !v)}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-burnt-peach-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors focus:outline-none"
+          >
+            <CalendarDays className="w-4 h-4" />
+          </button>
+        </div>
       )}
 
       {/* Quick-select */}

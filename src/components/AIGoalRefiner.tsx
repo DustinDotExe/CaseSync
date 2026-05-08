@@ -372,7 +372,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
             <div className="flex items-start justify-between gap-4">
               <div>
                 <CardTitle className="text-lg font-bold flex items-center gap-2 text-slate-900 dark:text-slate-100">
-                  Generate SMART Goals
+                  Generate <span className="hidden sm:inline">SMART </span>Goals
                 </CardTitle>
                 <CardDescription className="text-slate-500 dark:text-slate-400 mt-1">Create your own or transform rough notes into SMART goals.</CardDescription>
               </div>
@@ -510,7 +510,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
 
       <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
         <CardHeader>
-          <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">Active SMART Goals</CardTitle>
+          <CardTitle className="text-lg font-bold text-slate-900 dark:text-slate-100">Active <span className="hidden sm:inline">SMART </span>Goals</CardTitle>
           <CardDescription className="text-slate-500 dark:text-slate-400">Current objectives for this participant.</CardDescription>
         </CardHeader>
         <CardContent>

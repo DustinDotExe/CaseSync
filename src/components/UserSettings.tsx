@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
 import { auth, db } from '../firebase';
-import { updateProfile, signOut } from 'firebase/auth';
+import { updateProfile, signOut, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from './ui/sheet';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Textarea } from './ui/textarea';
-import { Separator } from './ui/separator';
-import { User, Sun, Moon, Monitor, LogOut, Check, Palette, ChevronDown, Plus, Pencil, Trash2, X, RotateCcw, Flag } from 'lucide-react';
+import { Moon, Monitor, Sun, LogOut, Check, ChevronLeft, Plus, Pencil, Trash2, X, RotateCcw, ChevronDown } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES } from '../types';
 import { DEFAULT_STORED_TEMPLATES } from './AIGoalRefiner';
 
 interface UserSettingsProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
   user: { uid: string; displayName: string | null; email: string | null };
   userTitle: string;
   isDark: boolean;
@@ -43,27 +40,49 @@ const THEME_OPTIONS: { value: 'light' | 'dark' | 'system'; label: string; Icon: 
   { value: 'system', label: 'System', Icon: Monitor },
 ];
 
+function Section({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+      {children}
+    </div>
+  );
+}
+
+function SectionHeader({ label, description, action }: {
+  label: string;
+  description?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800">
+      <div>
+        <h2 className="text-sm font-bold text-burnt-peach-600 dark:text-burnt-peach-400 tracking-wide">{label}</h2>
+        {description && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
 export default function UserSettings({
-  open, onOpenChange, user, userTitle, isDark,
+  onClose, user, userTitle, isDark,
   onThemeChange, themePreference, paletteColor, onPaletteChange,
   goalTemplates, onGoalTemplatesChange,
   milestonePhases, onMilestonePhasesChange,
 }: UserSettingsProps) {
-  // ── Profile ──────────────────────────────────────────────────────────────
   const [displayName, setDisplayName] = useState(user.displayName || '');
   const [title, setTitle] = useState(userTitle);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [resetSending, setResetSending] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
-  // ── Collapsible sections ─────────────────────────────────────────────────
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
-  const toggle = (key: string) => setExpanded(p => ({ ...p, [key]: !p[key] }));
+  const hasPasswordProvider = auth.currentUser?.providerData.some(p => p.providerId === 'password') ?? false;
 
-  // ── Templates ────────────────────────────────────────────────────────────
   const [localTemplates, setLocalTemplates] = useState<StoredTemplateCategory[]>(goalTemplates);
   const [localPhases, setLocalPhases] = useState<MilestonePhase[]>(milestonePhases);
   const [expandedCats, setExpandedCats] = useState<Record<number, boolean>>({});
-  const [editingKey, setEditingKey] = useState<string | null>(null); // "catIdx-tmplIdx"
+  const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [addingToCat, setAddingToCat] = useState<number | null>(null);
@@ -71,24 +90,17 @@ export default function UserSettings({
   const [newNotes, setNewNotes] = useState('');
 
   useEffect(() => {
-    if (open) {
-      setLocalTemplates(goalTemplates);
-      setLocalPhases(milestonePhases);
-      setDisplayName(user.displayName || '');
-      setTitle(userTitle);
-      setEditingKey(null);
-      setAddingToCat(null);
-    }
-  }, [open]);
+    setLocalTemplates(goalTemplates);
+    setLocalPhases(milestonePhases);
+    setDisplayName(user.displayName || '');
+    setTitle(userTitle);
+  }, []);
 
   const persistTemplates = async (updated: StoredTemplateCategory[]) => {
     setLocalTemplates(updated);
     onGoalTemplatesChange(updated);
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        goalTemplates: updated,
-        updatedAt: serverTimestamp(),
-      });
+      await updateDoc(doc(db, 'users', user.uid), { goalTemplates: updated, updatedAt: serverTimestamp() });
     } catch (err) {
       console.error('Save templates error:', err);
     }
@@ -98,10 +110,7 @@ export default function UserSettings({
     setLocalPhases(updated);
     onMilestonePhasesChange(updated);
     try {
-      await updateDoc(doc(db, 'users', user.uid), {
-        milestonePhases: updated,
-        updatedAt: serverTimestamp(),
-      });
+      await updateDoc(doc(db, 'users', user.uid), { milestonePhases: updated, updatedAt: serverTimestamp() });
     } catch (err) {
       console.error('Save milestone phases error:', err);
     }
@@ -125,6 +134,20 @@ export default function UserSettings({
       console.error('Save profile error:', err);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!user.email) return;
+    setResetSending(true);
+    try {
+      await sendPasswordResetEmail(auth, user.email);
+      setResetSent(true);
+      setTimeout(() => setResetSent(false), 5000);
+    } catch (err) {
+      console.error('Password reset error:', err);
+    } finally {
+      setResetSending(false);
     }
   };
 
@@ -170,299 +193,334 @@ export default function UserSettings({
     await persistTemplates(updated);
   };
 
-  const resetTemplates = async () => {
-    await persistTemplates(DEFAULT_STORED_TEMPLATES);
-  };
-
-  // ── Section header ────────────────────────────────────────────────────────
-  const SectionHeader = ({ id, icon: Icon, label }: { id: string; icon: React.ElementType; label: string }) => (
-    <button
-      onClick={() => toggle(id)}
-      className="w-full flex items-center justify-between py-3 text-left group"
-    >
-      <div className="flex items-center gap-2">
-        <Icon className="w-4 h-4 text-burnt-peach-600" />
-        <span className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">{label}</span>
-      </div>
-      <ChevronDown className={cn('w-4 h-4 text-slate-400 transition-transform duration-200', expanded[id] && 'rotate-180')} />
-    </button>
-  );
-
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="right" className="w-full sm:w-[420px] bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 p-0 flex flex-col">
-        <SheetHeader className="px-6 py-5 border-b border-slate-100 dark:border-slate-800 shrink-0">
-          <SheetTitle className="text-lg font-black text-slate-900 dark:text-white tracking-tight">Settings</SheetTitle>
-        </SheetHeader>
+    <div className="h-full overflow-y-auto bg-slate-50 dark:bg-slate-950">
 
-        <div className="flex-1 overflow-y-auto px-6 py-2 divide-y divide-slate-100 dark:divide-slate-800">
+      {/* Page header */}
+      <div className="sticky top-0 z-10 bg-slate-50/90 dark:bg-slate-950/90 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800 px-4 sm:px-6 py-3 sm:py-4 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onClose}
+          className="h-8 w-8 -ml-1 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-800 shrink-0"
+        >
+          <ChevronLeft className="w-4 h-4" />
+        </Button>
+        <h1 className="text-base font-semibold text-slate-900 dark:text-white">Settings</h1>
+      </div>
 
-          {/* ── Account ─────────────────────────────────────────────────── */}
-          <div>
-            <SectionHeader id="account" icon={User} label="Account" />
-            {expanded.account && (
-              <div className="pb-5 space-y-3">
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Email</Label>
-                  <Input value={user.email || ''} disabled className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-sm" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Display Name</Label>
-                  <Input value={displayName} onChange={e => setDisplayName(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-burnt-peach-500" placeholder="Your name" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wider">Job Title</Label>
-                  <Input value={title} onChange={e => setTitle(e.target.value)} className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-burnt-peach-500" placeholder="e.g. Court Case Manager" />
-                </div>
-                <Button onClick={handleSaveProfile} disabled={saving || !displayName.trim() || !title.trim()} className="w-full bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white font-bold rounded-xl">
-                  {saved ? <><Check className="w-4 h-4" /> Saved</> : saving ? 'Saving…' : 'Save Profile'}
-                </Button>
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-5 sm:py-8 space-y-3 sm:space-y-4">
+
+        {/* Account */}
+        <Section>
+          <SectionHeader label="Account" />
+          <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-3 sm:space-y-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Email</Label>
+              <Input
+                value={user.email || ''}
+                disabled
+                className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Display Name</Label>
+                <Input
+                  value={displayName}
+                  onChange={e => setDisplayName(e.target.value)}
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-burnt-peach-500"
+                  placeholder="Your name"
+                />
               </div>
-            )}
-          </div>
-
-          {/* ── Appearance ──────────────────────────────────────────────── */}
-          <div>
-            <SectionHeader id="appearance" icon={Sun} label="Appearance" />
-            {expanded.appearance && (
-              <div className="pb-5 space-y-5">
-                <div className="space-y-2">
-                  <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Mode</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {THEME_OPTIONS.map(({ value, label, Icon }) => (
-                      <button key={value} onClick={() => onThemeChange(value)}
-                        className={cn('flex flex-col items-center gap-2 p-3 rounded-xl border-2 text-sm font-bold transition-all',
-                          themePreference === value
-                            ? 'border-burnt-peach-600 bg-burnt-peach-50 dark:bg-burnt-peach-950/30 text-burnt-peach-600 dark:text-burnt-peach-400'
-                            : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                        )}>
-                        <Icon className="w-5 h-5" />{label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5">
-                    <Palette className="w-3.5 h-3.5 text-slate-400" />
-                    <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Color</p>
-                  </div>
-                  <div className="flex justify-center gap-3">
-                    {PALETTES.map(({ value, label, swatch }) => (
-                      <button key={value} onClick={() => onPaletteChange(value)} title={label}
-                        className="w-7 h-7 rounded-full transition-all focus:outline-none"
-                        style={{ backgroundColor: swatch, boxShadow: paletteColor === value ? `0 0 0 2px white, 0 0 0 4px ${swatch}` : undefined }} />
-                    ))}
-                  </div>
-                </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Job Title</Label>
+                <Input
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-burnt-peach-500"
+                  placeholder="e.g. Court Case Manager"
+                />
               </div>
-            )}
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button
+                onClick={handleSaveProfile}
+                disabled={saving || !displayName.trim() || !title.trim()}
+                size="sm"
+                className="bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white px-5 rounded-xl w-full sm:w-auto"
+              >
+                {saved ? <><Check className="w-3.5 h-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save Profile'}
+              </Button>
+            </div>
+
           </div>
+        </Section>
 
-          {/* ── Goal Templates ───────────────────────────────────────────── */}
-          <div>
-            <SectionHeader id="templates" icon={Check} label="Goal Templates" />
-            {expanded.templates && (
-              <div className="pb-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Customize the templates shown in the Goals tab.</p>
-                  <Button variant="ghost" size="sm" onClick={resetTemplates} className="h-7 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 gap-1 shrink-0">
-                    <RotateCcw className="w-3 h-3" /> Reset
-                  </Button>
-                </div>
+        {/* Password Reset */}
+        {hasPasswordProvider && (
+          <Section>
+            <SectionHeader label="Password" />
+            <div className="px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3">
+              <p className="text-sm text-slate-500 dark:text-slate-400 flex-1">Send a reset link to {user.email}</p>
+              <Button
+                size="sm"
+                onClick={handlePasswordReset}
+                disabled={resetSending || resetSent}
+                className={cn(
+                  'rounded-xl text-white px-5 w-full sm:w-auto',
+                  resetSent
+                    ? 'bg-green-600 hover:bg-green-600'
+                    : 'bg-burnt-peach-600 hover:bg-burnt-peach-700'
+                )}
+              >
+                {resetSent ? <><Check className="w-3.5 h-3.5 mr-1.5" />Email sent</> : resetSending ? 'Sending…' : 'Reset Password'}
+              </Button>
+            </div>
+          </Section>
+        )}
 
-                <div className="space-y-2">
-                  {localTemplates.map((cat, catIdx) => (
-                    <div key={cat.domain} className="border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                      {/* category header */}
-                      <button
-                        onClick={() => setExpandedCats(p => ({ ...p, [catIdx]: !p[catIdx] }))}
-                        className="w-full flex items-center justify-between px-3 py-2.5 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                      >
-                        <span className="text-xs font-bold text-slate-700 dark:text-slate-300">{cat.domain}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-[10px] text-slate-400">{cat.templates.length}</span>
-                          <ChevronDown className={cn('w-3.5 h-3.5 text-slate-400 transition-transform', expandedCats[catIdx] && 'rotate-180')} />
-                        </div>
-                      </button>
+        {/* Appearance */}
+        <Section>
+          <SectionHeader label="Appearance" />
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
+              <span className="text-sm text-slate-700 dark:text-slate-300 shrink-0">Mode</span>
+              <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 shrink-0">
+                {THEME_OPTIONS.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => onThemeChange(value)}
+                    className={cn(
+                      'flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-md text-sm transition-all',
+                      themePreference === value
+                        ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 shadow-sm'
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                    )}
+                  >
+                    <Icon className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden sm:inline">{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 gap-3">
+              <span className="text-sm text-slate-700 dark:text-slate-300 shrink-0">Accent Color</span>
+              <div className="flex items-center gap-2.5 sm:gap-3">
+                {PALETTES.map(({ value, label, swatch }) => (
+                  <button
+                    key={value}
+                    onClick={() => onPaletteChange(value)}
+                    title={label}
+                    className="w-6 h-6 rounded-full transition-all focus:outline-none"
+                    style={{
+                      backgroundColor: swatch,
+                      boxShadow: paletteColor === value ? `0 0 0 2px white, 0 0 0 4px ${swatch}` : undefined,
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </Section>
 
-                      {/* template list */}
-                      {expandedCats[catIdx] && (
-                        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-                          {cat.templates.map((tmpl, tmplIdx) => {
-                            const key = `${catIdx}-${tmplIdx}`;
-                            return (
-                              <div key={tmplIdx} className="px-3 py-2.5 bg-white dark:bg-slate-900">
-                                {editingKey === key ? (
-                                  <div className="space-y-2">
-                                    <Input
-                                      value={editLabel}
-                                      onChange={e => setEditLabel(e.target.value)}
-                                      placeholder="Label"
-                                      className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
-                                      autoFocus
-                                    />
-                                    <Textarea
-                                      value={editNotes}
-                                      onChange={e => setEditNotes(e.target.value)}
-                                      placeholder="Notes"
-                                      className="text-xs min-h-[72px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
-                                    />
-                                    <div className="flex gap-2 justify-end">
-                                      <Button size="sm" variant="ghost" onClick={() => setEditingKey(null)} className="h-7 text-xs text-slate-500">
-                                        <X className="w-3 h-3" /> Cancel
-                                      </Button>
-                                      <Button size="sm" onClick={() => saveEditTemplate(catIdx, tmplIdx)} className="h-7 text-xs bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white">
-                                        <Check className="w-3 h-3" /> Save
-                                      </Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-start justify-between gap-2">
-                                    <span className="text-xs font-medium text-slate-700 dark:text-slate-300 leading-relaxed pt-0.5">{tmpl.label}</span>
-                                    <div className="flex gap-1 shrink-0">
-                                      <Button variant="ghost" size="icon" onClick={() => startEditTemplate(catIdx, tmplIdx)} className="h-6 w-6 text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400">
-                                        <Pencil className="w-3 h-3" />
-                                      </Button>
-                                      <Button variant="ghost" size="icon" onClick={() => deleteTemplate(catIdx, tmplIdx)} className="h-6 w-6 text-slate-400 hover:text-red-500 dark:hover:text-red-400">
-                                        <Trash2 className="w-3 h-3" />
-                                      </Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
+        {/* My Goal Templates */}
+        <Section>
+          <SectionHeader
+            label="My Goal Templates"
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => persistTemplates(DEFAULT_STORED_TEMPLATES)}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 gap-1 shrink-0 h-7 px-2"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span className="hidden sm:inline">Reset to Agency Templates</span>
+              </Button>
+            }
+          />
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {localTemplates.map((cat, catIdx) => (
+              <div key={cat.domain}>
+                <button
+                  onClick={() => setExpandedCats(p => ({ ...p, [catIdx]: !p[catIdx] }))}
+                  className="w-full flex items-center justify-between px-4 sm:px-6 py-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                >
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{cat.domain}</span>
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs font-medium text-slate-400 dark:text-slate-500 tabular-nums bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-md">{cat.templates.length}</span>
+                    <ChevronDown className={cn("w-3.5 h-3.5 text-slate-400 transition-transform duration-200", expandedCats[catIdx] && "rotate-180")} />
+                  </div>
+                </button>
 
-                          {/* add template form */}
-                          {addingToCat === catIdx ? (
-                            <div className="px-3 py-3 bg-white dark:bg-slate-900 space-y-2">
+                {expandedCats[catIdx] && (
+                  <div className="border-t border-slate-100 dark:border-slate-800 divide-y divide-slate-100 dark:divide-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+                    {cat.templates.map((tmpl, tmplIdx) => {
+                      const key = `${catIdx}-${tmplIdx}`;
+                      return (
+                        <div key={tmplIdx} className="px-4 sm:px-6 py-3">
+                          {editingKey === key ? (
+                            <div className="space-y-2">
                               <Input
-                                value={newLabel}
-                                onChange={e => setNewLabel(e.target.value)}
+                                value={editLabel}
+                                onChange={e => setEditLabel(e.target.value)}
                                 placeholder="Label"
-                                className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                                className="h-8 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
                                 autoFocus
                               />
                               <Textarea
-                                value={newNotes}
-                                onChange={e => setNewNotes(e.target.value)}
-                                placeholder="Notes (optional)"
-                                className="text-xs min-h-[64px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
+                                value={editNotes}
+                                onChange={e => setEditNotes(e.target.value)}
+                                placeholder="Notes"
+                                className="text-sm min-h-[64px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
                               />
                               <div className="flex gap-2 justify-end">
-                                <Button size="sm" variant="ghost" onClick={() => { setAddingToCat(null); setNewLabel(''); setNewNotes(''); }} className="h-7 text-xs text-slate-500">
-                                  <X className="w-3 h-3" /> Cancel
+                                <Button size="sm" variant="ghost" onClick={() => setEditingKey(null)} className="text-sm text-slate-500">
+                                  <X className="w-3 h-3 mr-1" /> Cancel
                                 </Button>
-                                <Button size="sm" onClick={() => addTemplate(catIdx)} disabled={!newLabel.trim()} className="h-7 text-xs bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white">
-                                  <Check className="w-3 h-3" /> Add
+                                <Button size="sm" onClick={() => saveEditTemplate(catIdx, tmplIdx)} className="text-sm bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white">
+                                  <Check className="w-3 h-3 mr-1" /> Save
                                 </Button>
                               </div>
                             </div>
                           ) : (
-                            <button
-                              onClick={() => { setAddingToCat(catIdx); setEditingKey(null); setNewLabel(''); setNewNotes(''); }}
-                              className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors"
-                            >
-                              <Plus className="w-3 h-3" /> Add template
-                            </button>
+                            <div className="flex items-center justify-between gap-2 group">
+                              <span className="text-sm text-slate-600 dark:text-slate-400 leading-snug">{tmpl.label}</span>
+                              <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <Button variant="ghost" size="icon" onClick={() => startEditTemplate(catIdx, tmplIdx)} className="h-7 w-7 text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400">
+                                  <Pencil className="w-3 h-3" />
+                                </Button>
+                                <Button variant="ghost" size="icon" onClick={() => deleteTemplate(catIdx, tmplIdx)} className="h-7 w-7 text-slate-400 hover:text-red-500 dark:hover:text-red-400">
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+                      );
+                    })}
 
-          {/* ── Milestones ──────────────────────────────────────────────── */}
-          <div>
-            <SectionHeader id="milestones" icon={Flag} label="Milestones" />
-            {expanded.milestones && (
-              <div className="pb-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Configure the phases participants progress through.</p>
-                  <Button variant="ghost" size="sm" onClick={() => persistPhases(DEFAULT_MILESTONE_PHASES)} className="h-7 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 gap-1 shrink-0">
-                    <RotateCcw className="w-3 h-3" /> Reset
-                  </Button>
-                </div>
-
-                <div className="space-y-2">
-                  {localPhases.map((phase, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 w-14 shrink-0 uppercase tracking-wider">Phase {i + 1}</span>
-                      <Input
-                        value={phase.label}
-                        onChange={e => {
-                          const updated = localPhases.map((p, pi) => pi === i ? { label: e.target.value } : p);
-                          setLocalPhases(updated);
-                        }}
-                        onBlur={e => {
-                          const updated = localPhases.map((p, pi) => pi === i ? { label: e.target.value } : p);
-                          persistPhases(updated);
-                        }}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
-                        placeholder={`Phase ${i + 1} label`}
-                      />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={() => persistPhases(localPhases.filter((_, pi) => pi !== i))}
-                        disabled={localPhases.length <= 1}
-                        className="h-7 w-7 shrink-0 text-slate-400 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-30"
+                    {addingToCat === catIdx ? (
+                      <div className="px-4 sm:px-6 py-3 space-y-2">
+                        <Input
+                          value={newLabel}
+                          onChange={e => setNewLabel(e.target.value)}
+                          placeholder="Label"
+                          className="h-8 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                          autoFocus
+                        />
+                        <Textarea
+                          value={newNotes}
+                          onChange={e => setNewNotes(e.target.value)}
+                          placeholder="Notes (optional)"
+                          className="text-sm min-h-[56px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" variant="ghost" onClick={() => { setAddingToCat(null); setNewLabel(''); setNewNotes(''); }} className="text-sm text-slate-500">
+                            <X className="w-3 h-3 mr-1" /> Cancel
+                          </Button>
+                          <Button size="sm" onClick={() => addTemplate(catIdx)} disabled={!newLabel.trim()} className="text-sm bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white">
+                            <Check className="w-3 h-3 mr-1" /> Add
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => { setAddingToCat(catIdx); setEditingKey(null); setNewLabel(''); setNewNotes(''); }}
+                        className="w-full flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors"
                       >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-
-                {localPhases.length < 10 && (
-                  <button
-                    onClick={() => persistPhases([...localPhases, { label: '' }])}
-                    className="w-full flex items-center gap-1.5 px-3 py-2 text-xs text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors rounded-lg border border-dashed border-slate-200 dark:border-slate-700"
-                  >
-                    <Plus className="w-3 h-3" /> Add Phase
-                  </button>
+                        <Plus className="w-3 h-3" /> Add template
+                      </button>
+                    )}
+                  </div>
                 )}
               </div>
+            ))}
+          </div>
+        </Section>
+
+        {/* My Milestones */}
+        <Section>
+          <SectionHeader
+            label="My Milestones"
+            action={
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => persistPhases(DEFAULT_MILESTONE_PHASES)}
+                className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 gap-1 shrink-0 h-7 px-2"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span className="hidden sm:inline">Reset to Agency Templates</span>
+              </Button>
+            }
+          />
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
+            {localPhases.map((phase, i) => (
+              <div key={i} className="flex items-center gap-3 px-4 sm:px-6 py-3">
+                <span className="w-5 h-5 shrink-0 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-400 dark:text-slate-500 tabular-nums">
+                  {i + 1}
+                </span>
+                <Input
+                  value={phase.label}
+                  onChange={e => {
+                    const updated = localPhases.map((p, pi) => pi === i ? { label: e.target.value } : p);
+                    setLocalPhases(updated);
+                  }}
+                  onBlur={e => {
+                    const updated = localPhases.map((p, pi) => pi === i ? { label: e.target.value } : p);
+                    persistPhases(updated);
+                  }}
+                  className="h-8 text-sm bg-transparent border-0 shadow-none focus-visible:ring-0 focus-visible:bg-slate-50 dark:focus-visible:bg-slate-800 rounded-lg px-2 -mx-2 transition-colors"
+                  placeholder={`Phase ${i + 1} name`}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => persistPhases(localPhases.filter((_, pi) => pi !== i))}
+                  disabled={localPhases.length <= 1}
+                  className="h-7 w-7 shrink-0 text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 disabled:opacity-30"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ))}
+            {localPhases.length < 10 && (
+              <button
+                onClick={() => persistPhases([...localPhases, { label: '' }])}
+                className="w-full flex items-center gap-2 px-4 sm:px-6 py-3 text-sm text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" /> Add phase
+              </button>
             )}
           </div>
+        </Section>
 
-          {/* ── Session ──────────────────────────────────────────────────── */}
-          <div>
-            <button
-              onClick={() => signOut(auth)}
-              className="w-full flex items-center gap-2 py-3 text-left group"
-            >
-              <LogOut className="w-4 h-4 text-burnt-peach-600" />
-              <span className="text-xs font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 group-hover:text-slate-700 dark:group-hover:text-slate-300 transition-colors">Sign Out</span>
-            </button>
-          </div>
-
-        </div>
-
-        {/* ── Legal footer ─────────────────────────────────────────────────── */}
-        <div className="px-6 py-3 border-t border-slate-100 dark:border-slate-800 shrink-0 flex items-center justify-center gap-4">
-          <a
-            href="/privacy"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors"
+        {/* Sign out */}
+        <Section>
+          <button
+            onClick={() => signOut(auth)}
+            className="w-full flex items-center gap-3 px-4 sm:px-6 py-4 group hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors rounded-2xl"
           >
+            <LogOut className="w-4 h-4 text-slate-400 dark:text-slate-500 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors" />
+            <span className="text-sm text-slate-600 dark:text-slate-400 group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">Sign out</span>
+          </button>
+        </Section>
+
+        {/* Legal */}
+        <div className="flex items-center justify-center gap-4 pb-4">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors">
             Privacy Policy
           </a>
-          <span className="text-slate-200 dark:text-slate-700 select-none">&middot;</span>
-          <a
-            href="/terms"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-[11px] text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors"
-          >
+          <span className="text-slate-300 dark:text-slate-700 select-none">&middot;</span>
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors">
             Terms of Service
           </a>
         </div>
-      </SheetContent>
-    </Sheet>
+
+      </div>
+    </div>
   );
 }

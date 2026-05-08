@@ -148,15 +148,17 @@ export default function AuditLog({ participant }: { participant: Participant }) 
   const [activeFilter, setActiveFilter] = useState<FilterKey>('completed_goals');
 
   useEffect(() => {
-    const removeDark = () => document.documentElement.classList.remove('dark');
-    const restoreDark = () => {
+    const beforePrint = () => {
+      document.documentElement.classList.remove('dark');
+    };
+    const afterPrint = () => {
       if (localStorage.getItem('theme') === 'dark') document.documentElement.classList.add('dark');
     };
-    window.addEventListener('beforeprint', removeDark);
-    window.addEventListener('afterprint', restoreDark);
+    window.addEventListener('beforeprint', beforePrint);
+    window.addEventListener('afterprint', afterPrint);
     return () => {
-      window.removeEventListener('beforeprint', removeDark);
-      window.removeEventListener('afterprint', restoreDark);
+      window.removeEventListener('beforeprint', beforePrint);
+      window.removeEventListener('afterprint', afterPrint);
     };
   }, []);
 
@@ -302,12 +304,12 @@ export default function AuditLog({ participant }: { participant: Participant }) 
     <div className="space-y-6">
     <div ref={cardRef} data-report-container className="print:m-0 print:p-0">
     <Card className="bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-lg max-w-5xl mx-auto print:max-w-none print:shadow-none print:border-none">
-      <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 bg-white dark:bg-slate-900 space-y-4">
+      <CardHeader className="border-b border-slate-100 dark:border-slate-800 pb-4 bg-white dark:bg-slate-900 space-y-3">
         {/* Title row */}
         <div className="grid grid-cols-3 items-start gap-4">
           <div className="col-span-2 space-y-1">
-            <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">
-              {participant.name} / Case Plan History
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-slate-100 tracking-tight leading-snug">
+              {participant.name} /<br className="sm:hidden print:hidden" /> Case Plan History
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
               Created on {new Date().toLocaleDateString()}
@@ -322,16 +324,16 @@ export default function AuditLog({ participant }: { participant: Participant }) 
         <Separator className="bg-slate-100 dark:bg-slate-800" />
 
         {/* Participant info strip */}
-        <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 py-2 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
-          <div className="text-center py-2 sm:py-0">
+        <section className="grid grid-cols-1 sm:grid-cols-3 gap-0 items-center divide-y sm:divide-y-0 sm:divide-x divide-slate-100 dark:divide-slate-800">
+          <div className="text-center py-1.5 pt-0 sm:py-0">
             <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Participant</p>
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.name}</p>
           </div>
-          <div className="text-center py-2 sm:py-0">
+          <div className="text-center py-1.5 sm:py-0">
             <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Current Phase</p>
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.currentPhase}</p>
           </div>
-          <div className="text-center py-2 sm:py-0">
+          <div className="text-center py-1.5 pb-0 sm:py-0">
             <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-0.5">Case Number</p>
             <p className="text-base font-bold text-slate-800 dark:text-slate-200">{participant.caseNumber}</p>
           </div>
@@ -603,9 +605,6 @@ export default function AuditLog({ participant }: { participant: Participant }) 
         <Printer className="w-4 h-4" />
         Print / Save as PDF
       </Button>
-      <p className="text-[11px] text-slate-400 dark:text-slate-600">
-        Choose "Save as PDF" in the print dialog to download
-      </p>
     </div>
     </div>
   );

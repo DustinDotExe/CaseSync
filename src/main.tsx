@@ -5,6 +5,7 @@ import App from './App.tsx';
 import LandingPage from './components/LandingPage.tsx';
 import PrivacyPolicy from './components/PrivacyPolicy.tsx';
 import TermsOfService from './components/TermsOfService.tsx';
+import ParticipantPortal from './components/ParticipantPortal.tsx';
 import './index.css';
 
 createRoot(document.getElementById('root')!).render(
@@ -14,6 +15,7 @@ createRoot(document.getElementById('root')!).render(
         <Route path="/" element={<LandingPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/terms" element={<TermsOfService />} />
+        <Route path="/p/:token" element={<ParticipantPortal />} />
         <Route path="*" element={<App />} />
       </Routes>
     </BrowserRouter>
