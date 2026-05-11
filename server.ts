@@ -6,7 +6,16 @@ import { GoogleGenAI } from '@google/genai';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
-app.use(express.json());
+app.use(express.json({ limit: '16kb' }));
+
+const requestLog = new Map<string, number[]>();
+function tooManyRequests(key: string, limit = 20, windowMs = 60_000) {
+  const now = Date.now();
+  const events = (requestLog.get(key) || []).filter(ts => now - ts < windowMs);
+  events.push(now);
+  requestLog.set(key, events);
+  return events.length > limit;
+}
 
 const apiKey = process.env.GEMINI_API_KEY;
 if (!apiKey) {
@@ -128,6 +137,9 @@ async function streamGemini(
 
 app.post('/api/refine-goal', verifyFirebaseToken, (req, res) => {
   const { prompt } = req.body as { prompt: string };
+  const key = `${req.ip}:${req.headers.authorization?.slice(-12) || 'anon'}`;
+  if (tooManyRequests(key)) { res.status(429).json({ error: 'Rate limit exceeded' }); return; }
+  if (typeof prompt !== 'string' || prompt.trim().length === 0 || prompt.length > 8000) { res.status(400).json({ error: 'Invalid prompt' }); return; }
   streamGemini(
     res,
     'You are an expert court case manager. Your task is to refine rough notes into a single SMART goal. Return only the refined goal text. Do not use Markdown, lists, or styling. Keep the tone objective and the length minimal while retaining all key facts.',
@@ -138,6 +150,9 @@ app.post('/api/refine-goal', verifyFirebaseToken, (req, res) => {
 
 app.post('/api/refine-notes', verifyFirebaseToken, (req, res) => {
   const { prompt } = req.body as { prompt: string };
+  const key = `${req.ip}:${req.headers.authorization?.slice(-12) || 'anon'}`;
+  if (tooManyRequests(key)) { res.status(429).json({ error: 'Rate limit exceeded' }); return; }
+  if (typeof prompt !== 'string' || prompt.trim().length === 0 || prompt.length > 12000) { res.status(400).json({ error: 'Invalid prompt' }); return; }
   streamGemini(
     res,
     'You are an expert court case manager. Using the participant case data provided for context, rewrite the case manager observations into clear, professional plain language. The result should reflect the participant\'s current situation, progress, and any concerns informed by their goals and treatment areas. Do not use Markdown, lists, or styling. Keep the tone objective and formal. Output only the refined observations text.',
@@ -148,6 +163,9 @@ app.post('/api/refine-notes', verifyFirebaseToken, (req, res) => {
 
 app.post('/api/hearing-brief', verifyFirebaseToken, (req, res) => {
   const { prompt } = req.body as { prompt: string };
+  const key = `${req.ip}:${req.headers.authorization?.slice(-12) || 'anon'}`;
+  if (tooManyRequests(key)) { res.status(429).json({ error: 'Rate limit exceeded' }); return; }
+  if (typeof prompt !== 'string' || prompt.trim().length === 0 || prompt.length > 12000) { res.status(400).json({ error: 'Invalid prompt' }); return; }
   streamGemini(
     res,
     'You are an experienced court case manager preparing a history summary for a judge. Based on the participant data provided, write 3 to 5 sentences covering overall progress, key achievements, any outstanding concerns or compliance gaps, and a phase recommendation. Use professional, objective language suitable for a courtroom. Do not use Markdown, headers, bullet points, or numbered lists. Write in clear paragraph form only.',

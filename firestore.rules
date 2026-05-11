@@ -127,7 +127,9 @@ service cloud.firestore {
                'irasDomains',
                'phaseUpdate',
                'milestonePhaseLabels',
-               'updatedAt'
+               'updatedAt',
+               'isActive',
+               'expiresAt'
              ]) &&
              data.keys().hasOnly([
                'participantId',
@@ -147,7 +149,9 @@ service cloud.firestore {
                'createdAt',
                'updatedAt',
                'caseManagerSignature',
-               'participantSignature'
+               'participantSignature',
+               'isActive',
+               'expiresAt'
              ]) &&
              data.participantId is string &&
              data.uid is string &&
@@ -163,6 +167,8 @@ service cloud.firestore {
              data.irasDomains is list && data.irasDomains.size() <= 20 &&
              (data.phaseUpdate == null || data.phaseUpdate is string) &&
              data.milestonePhaseLabels is list && data.milestonePhaseLabels.size() <= 10 &&
+             data.isActive is bool &&
+             data.expiresAt is timestamp &&
              (!('caseManagerSignature' in data) || isValidSignature(data.caseManagerSignature)) &&
              (!('participantSignature' in data) || isValidSignature(data.participantSignature));
     }
@@ -206,8 +212,8 @@ service cloud.firestore {
     }
 
     match /participantPortals/{token} {
-      // Anyone with the token URL can read the portal document
-      allow read: if true;
+      // Anyone with the token URL can read while active and unexpired
+      allow read: if resource.data.isActive == true && resource.data.expiresAt > request.time;
       // Only the owning case manager can create
       allow create: if isAuthenticated() &&
                        request.resource.data.uid == request.auth.uid &&
@@ -217,7 +223,8 @@ service cloud.firestore {
                         resource.data.uid == request.auth.uid &&
                         request.resource.data.uid == resource.data.uid &&
                         isValidPortalDocument(request.resource.data)) ||
-                       (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantSignature']) &&
+                       (resource.data.participantSignature == null &&
+                        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['participantSignature']) &&
                         isValidSignature(request.resource.data.participantSignature));
       // Only the owning case manager can revoke (delete)
       allow delete: if isAuthenticated() && resource.data.uid == request.auth.uid;
