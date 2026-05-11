@@ -17,31 +17,62 @@ export default function SignaturePad({ onSign, disabled, defaultName = '' }: Sig
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const lastPointRef = useRef<{ x: number; y: number } | null>(null);
+  const hasDrawnRef = useRef(false);
 
-  const initCanvas = useCallback(() => {
+  const configureCanvas = useCallback((clear = true) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const width = Math.max(rect.width, 200);
+    const height = Math.max(rect.height, 150);
+    const pixelRatio = window.devicePixelRatio || 1;
+
+    canvas.width = Math.round(width * pixelRatio);
+    canvas.height = Math.round(height * pixelRatio);
+
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
     ctx.strokeStyle = '#1e293b';
     ctx.lineWidth = 2.5;
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    setHasDrawn(false);
+
+    if (clear) {
+      ctx.clearRect(0, 0, width, height);
+      setHasDrawn(false);
+      hasDrawnRef.current = false;
+    }
   }, []);
 
-  // Set canvas pixel size to match container width on mount
+  const initCanvas = useCallback(() => {
+    configureCanvas(true);
+  }, [configureCanvas]);
+
+  const drawLine = useCallback((from: { x: number; y: number }, to: { x: number; y: number }) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.stroke();
+    hasDrawnRef.current = true;
+    setHasDrawn(true);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const parent = canvas.parentElement;
-    if (parent) {
-      canvas.width = Math.max(parent.clientWidth, 200);
-      canvas.height = 150;
-    }
-    initCanvas();
-  }, [initCanvas]);
+    configureCanvas(true);
+
+    const resizeObserver = new ResizeObserver(() => {
+      if (!hasDrawnRef.current) configureCanvas(true);
+    });
+    resizeObserver.observe(canvas);
+
+    return () => resizeObserver.disconnect();
+  }, [configureCanvas]);
 
   // Re-init canvas ctx settings when switching back to drawn mode
   useEffect(() => {
@@ -50,11 +81,9 @@ export default function SignaturePad({ onSign, disabled, defaultName = '' }: Sig
 
   const getPoint = (e: MouseEvent | Touch, canvas: HTMLCanvasElement) => {
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
     };
   };
 
@@ -63,23 +92,15 @@ export default function SignaturePad({ onSign, disabled, defaultName = '' }: Sig
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const getCtx = () => canvas.getContext('2d');
-
     const onMouseDown = (e: MouseEvent) => {
       isDrawingRef.current = true;
       lastPointRef.current = getPoint(e, canvas);
     };
     const onMouseMove = (e: MouseEvent) => {
       if (!isDrawingRef.current) return;
-      const ctx = getCtx();
-      if (!ctx) return;
       const pt = getPoint(e, canvas);
       if (lastPointRef.current) {
-        ctx.beginPath();
-        ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-        ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
-        setHasDrawn(true);
+        drawLine(lastPointRef.current, pt);
       }
       lastPointRef.current = pt;
     };
@@ -95,15 +116,9 @@ export default function SignaturePad({ onSign, disabled, defaultName = '' }: Sig
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
       if (!isDrawingRef.current) return;
-      const ctx = getCtx();
-      if (!ctx) return;
       const pt = getPoint(e.touches[0], canvas);
       if (lastPointRef.current) {
-        ctx.beginPath();
-        ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-        ctx.lineTo(pt.x, pt.y);
-        ctx.stroke();
-        setHasDrawn(true);
+        drawLine(lastPointRef.current, pt);
       }
       lastPointRef.current = pt;
     };
@@ -130,7 +145,7 @@ export default function SignaturePad({ onSign, disabled, defaultName = '' }: Sig
       canvas.removeEventListener('touchmove', onTouchMove);
       canvas.removeEventListener('touchend', onTouchEnd);
     };
-  }, [mode]);
+  }, [drawLine, mode]);
 
   const handleSign = () => {
     if (disabled) return;

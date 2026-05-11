@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Users, TrendingUp, Target, FileText, Sparkles, ShieldCheck } from 'lucide-react';
 import CasePlanrLogo from './CasePlanrLogo';
 
@@ -35,11 +36,24 @@ const FEATURES = [
 ];
 
 export default function LandingPage() {
+  useEffect(() => {
+    const previousPalette = document.documentElement.dataset.palette;
+    document.documentElement.dataset.palette = 'blue';
+
+    return () => {
+      if (previousPalette) {
+        document.documentElement.dataset.palette = previousPalette;
+      } else {
+        delete document.documentElement.dataset.palette;
+      }
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-white flex flex-col">
 
       {/* Nav */}
-      <header className="absolute top-0 left-0 right-0 z-10 px-6 py-5 flex items-center justify-between max-w-5xl mx-auto w-full">
+      <header className="absolute top-0 left-0 right-0 z-10 px-6 py-4 flex items-center justify-between max-w-5xl mx-auto w-full">
         <div className="flex items-center gap-2.5">
           <CasePlanrLogo className="w-12 h-12 text-burnt-peach-600" />
           <span className="text-2xl font-black text-slate-900 tracking-tight">CasePlanr</span>
@@ -54,12 +68,12 @@ export default function LandingPage() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-[radial-gradient(ellipse_100%_70%_at_50%_100%,#dbeafe,#ffffff)]">
-        <div className="relative max-w-5xl mx-auto px-6 pt-40 pb-32 text-center">
-          <h1 className="text-5xl md:text-7xl font-black text-slate-900 tracking-tight leading-[1.05] mb-6">
+        <div className="relative max-w-5xl mx-auto px-6 pt-28 pb-20 md:pt-32 md:pb-24 text-center">
+          <h1 className="text-5xl md:text-6xl font-black text-slate-900 tracking-tight leading-[1.05] mb-5">
             Case plans that<br />
             <span className="text-burnt-peach-600">keep cases moving.</span>
           </h1>
-          <p className="text-lg text-slate-500 max-w-xl mx-auto text-balance leading-relaxed">
+          <p className="text-base md:text-lg text-slate-500 max-w-xl mx-auto text-balance leading-relaxed">
             CasePlanr helps court case managers track participant progress, manage goals, document observations, and generate professional case plans — all in one place.
           </p>
         </div>
@@ -67,7 +81,7 @@ export default function LandingPage() {
 
       {/* Features */}
       <main className="flex-1 bg-slate-50">
-        <section className="max-w-5xl mx-auto px-6 py-20">
+        <section className="max-w-5xl mx-auto px-6 py-16">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-black text-slate-900 tracking-tight">Everything a case manager needs</h2>
             <p className="text-slate-500 mt-3 text-balance">Purpose-built tools for every step of the case management workflow.</p>

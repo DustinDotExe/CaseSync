@@ -253,8 +253,8 @@ export default function CourtReport({
               <FileText className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
               Case Manager Observations
             </h3>
-            <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[100px]">
-              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+            <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[100px] print:bg-white print:border-none print:p-0">
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed print:text-slate-700">
                 {participant.notes || "No observations recorded for this period."}
               </p>
             </div>

@@ -244,6 +244,13 @@
   @page {
     size: letter portrait;
     margin: 0.75in 0.75in 0.6in;
+
+    @bottom-center {
+      content: "Page " counter(page) " of " counter(pages);
+      font-size: 10px;
+      color: #6b7280;
+      font-family: system-ui, -apple-system, sans-serif;
+    }
   }
 
   html, body {

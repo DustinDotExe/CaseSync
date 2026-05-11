@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
 import { Badge } from './components/ui/badge';
 import { Progress } from './components/ui/progress';
 import { ScrollArea } from './components/ui/scroll-area';
-import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight, ChevronDown, ChevronUp, CalendarDays, LogOut, Link2 } from 'lucide-react';
+import { Plus, User, FileText, Search, LayoutDashboard, Target, Trash2, Moon, Sun, Menu, Hash, Pencil, Check, X, History, Settings, ChevronRight, ChevronDown, CalendarDays, LogOut, Link2 } from 'lucide-react';
 import { 
   Sheet, 
   SheetContent, 
@@ -20,6 +20,7 @@ import {
   SheetHeader,
   SheetTitle
 } from './components/ui/sheet';
+import { Dialog, DialogContent, DialogTitle } from './components/ui/dialog';
 import { Participant, CurrentUser, StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES, normalizeGoals, Signature, ParticipantPortal } from './types';
 import CasePlanEditor from './components/CasePlanEditor';
 import ShareAndSign from './components/ShareAndSign';
@@ -114,7 +115,6 @@ export default function App() {
   const [isEditingParticipant, setIsEditingParticipant] = useState(false);
   const [activeTab, setActiveTab] = useState('plan');
   const [shareAndSignOpen, setShareAndSignOpen] = useState(false);
-  const shareAndSignRef = useRef<HTMLDivElement>(null);
   const [editedName, setEditedName] = useState('');
   const [editedCaseNumber, setEditedCaseNumber] = useState('');
   const [userTitle, setUserTitle] = useState('Court Case Manager');
@@ -169,8 +169,8 @@ export default function App() {
   }, [isDark, user]);
 
   useEffect(() => {
-    document.documentElement.dataset.palette = paletteColor;
-  }, [paletteColor]);
+    document.documentElement.dataset.palette = user ? paletteColor : 'blue';
+  }, [paletteColor, user]);
 
   useEffect(() => {
     setSelectedParticipantId(null);
@@ -180,14 +180,6 @@ export default function App() {
     setSettingsOpen(false);
     setSidebarOpen(false);
   }, [user?.uid]);
-
-  useEffect(() => {
-    if (activeTab !== 'report' || !shareAndSignOpen) return;
-    const frame = requestAnimationFrame(() => {
-      shareAndSignRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [activeTab, shareAndSignOpen]);
 
   const handleCloseSettings = () => {
     setSettingsOpen(false);
@@ -1270,30 +1262,36 @@ export default function App() {
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setShareAndSignOpen(open => !open)}
-                        className="w-full sm:w-auto border-burnt-peach-200 dark:border-burnt-peach-800 bg-burnt-peach-50 dark:bg-burnt-peach-950/30 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/40 text-burnt-peach-700 dark:text-burnt-peach-300 font-semibold shadow-sm shadow-burnt-peach-100/60 dark:shadow-burnt-peach-900/10 transition-all active:scale-[0.98]"
+                        onClick={() => setShareAndSignOpen(true)}
+                        className="w-full sm:w-auto border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold shadow-sm transition-all active:scale-[0.98]"
                       >
-                        <Link2 className="w-4 h-4" />
+                        <Link2 className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
                         Share & Sign
-                        {shareAndSignOpen ? <ChevronUp className="w-4 h-4 opacity-70" /> : <ChevronDown className="w-4 h-4 opacity-70" />}
                       </Button>
                     )}
                   />
                   {shareAndSignOpen && (
-                    <div ref={shareAndSignRef} className="max-w-5xl mx-auto no-print scroll-mt-6">
-                      <ShareAndSign
-                        participant={selectedParticipant}
-                        portalDoc={portalDoc}
-                        userTitle={userTitle}
-                        milestonePhases={milestonePhases}
-                        onGenerateLink={handleGenerateShareLink}
-                        onRevokeLink={handleRevokeShareLink}
-                        onSyncPortal={handleSyncPortal}
-                        onSignAsCaseManager={handleSignAsCaseManager}
-                        onRemoveSignature={handleRemovePortalSignature}
-                        onClose={() => setShareAndSignOpen(false)}
-                      />
-                    </div>
+                    <Dialog open={shareAndSignOpen} onOpenChange={setShareAndSignOpen}>
+                      <DialogContent
+                        showCloseButton={false}
+                        className="max-h-[calc(100vh-2rem)] overflow-y-auto p-0 sm:max-w-3xl bg-transparent ring-0 shadow-none no-print"
+                      >
+                        <DialogTitle className="sr-only">Share & Sign</DialogTitle>
+                        <ShareAndSign
+                          participant={selectedParticipant}
+                          portalDoc={portalDoc}
+                          userTitle={userTitle}
+                          caseManagerName={user.displayName || ''}
+                          milestonePhases={milestonePhases}
+                          onGenerateLink={handleGenerateShareLink}
+                          onRevokeLink={handleRevokeShareLink}
+                          onSyncPortal={handleSyncPortal}
+                          onSignAsCaseManager={handleSignAsCaseManager}
+                          onRemoveSignature={handleRemovePortalSignature}
+                          onClose={() => setShareAndSignOpen(false)}
+                        />
+                      </DialogContent>
+                    </Dialog>
                   )}
                 </TabsContent>
 

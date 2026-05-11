@@ -12,6 +12,7 @@ interface ShareAndSignProps {
   participant: Participant;
   portalDoc: ParticipantPortal | null;
   userTitle: string;
+  caseManagerName: string;
   milestonePhases: MilestonePhase[];
   onGenerateLink: () => Promise<void>;
   onRevokeLink: () => Promise<void>;
@@ -98,6 +99,7 @@ export default function ShareAndSign({
   participant,
   portalDoc,
   userTitle,
+  caseManagerName,
   onGenerateLink,
   onRevokeLink,
   onSyncPortal,
@@ -352,7 +354,7 @@ export default function ShareAndSign({
                   </Button>
                   {showSignPad && (
                     <div className="border border-slate-200 dark:border-slate-700 rounded-xl p-3 bg-slate-50 dark:bg-slate-800/50">
-                      <SignaturePad onSign={handleSignAsCaseManager} disabled={signingAsCM} />
+                      <SignaturePad onSign={handleSignAsCaseManager} disabled={signingAsCM} defaultName={caseManagerName} />
                     </div>
                   )}
                 </div>
