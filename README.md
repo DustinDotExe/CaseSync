@@ -1,28 +1,32 @@
 # CaseSync
 
-CaseSync is a React/Firebase case planning tool for court case managers. It helps authorized users maintain participant profiles, track phase progress, draft SMART goals, record observations, and produce printable case plan documents.
+CaseSync is a React + Firebase case-planning app for court case managers. It helps teams manage participant records, track progress through configurable milestone phases, draft and refine goals, generate court-ready reports, and securely share plan snapshots for participant signatures.
 
 The app is currently geared toward testing with Johnson County Problem Solving Courts.
 
 ## Current Features
 
-- Google sign-in through Firebase Authentication.
+- Authentication with Firebase Auth:
+  - Google sign-in
+  - Email/password sign-in and account creation
+  - Password reset flow
 - Per-user participant records stored in Firestore.
-- Participant search, creation, profile editing, and deletion.
-- Five-phase milestone tracking:
-  - Orientation & Stabilization
-  - Active Treatment
-  - Relapse Prevention
-  - Community Reintegration
-  - Commencement Preparation
+- Participant search, creation, profile editing, sorting, and deletion.
+- Milestone phase tracking with customizable phase labels in user settings.
 - IRAS target domain selection for case plans.
 - Case manager observations with browser speech-to-text support when available.
-- Gemini-assisted note refinement and SMART goal generation.
-- Built-in and user-customizable goal templates.
-- Active goal editing, deletion, completion tracking, and drag-and-drop ordering.
-- Printable case plan reports with participant details, target domains, active goals, observations, and signature lines.
+- Gemini-assisted SMART goal generation and note/goal refinement via server endpoints.
+- Built-in + user-customizable goal template categories.
+- Active goal editing, deletion, completion tracking, due/review dates, and drag-and-drop ordering.
+- Caseload dashboard view for quick participant progress summaries.
+- Share & Sign workflow:
+  - Generate/revoke secure share links per participant
+  - Participant portal view with read-only case-plan snapshot
+  - Signature capture and signature history
+- Printable case plan reports with participant details, target domains, goals, observations, milestones, and signatures.
 - Printable audit/history view with filters for goals, milestones, observations, and profile changes.
-- User settings for display name, job title, theme mode, color palette, and goal templates.
+- User settings for display name, job title, theme mode, color palette, goal templates, and milestone phases.
+- Terms of Service and Privacy Policy views available in-app.
 
 ## Tech Stack
 
@@ -31,20 +35,21 @@ The app is currently geared toward testing with Johnson County Problem Solving C
 - TypeScript
 - Firebase Auth
 - Firestore
-- Express production server
+- Express server for production + Gemini proxy endpoints
 - Google Gemini via `@google/genai`
 - Tailwind CSS 4
-- Base UI/shadcn-style local components
+- Local UI component set (shadcn/Base UI style)
 
 ## Data Model
 
-Firestore currently uses three main collections:
+Firestore currently uses these primary collections:
 
-- `users`: user profile, role, display title, and saved goal templates.
-- `participants`: participant profile, case number, phase state, milestones, goals, completed goals, notes, and IRAS domains.
-- `auditLog`: per-participant activity entries for profile updates, phase changes, goals, observations, and target-domain changes.
+- `users`: profile, role, display title, theme/template/preferences, and milestone phase configuration.
+- `participants`: participant profile, case number, phase state, milestones, goals, completed goals, notes, IRAS domains, and sharing metadata.
+- `auditLog`: per-participant activity entries for profile updates, phase changes, goals, observations, signatures, and target-domain changes.
+- `participantPortals`: share-token keyed portal snapshots used for participant-facing secure plan review/signature.
 
-Firestore rules restrict participant and audit data to the owning authenticated case manager. User roles are initialized as `case_manager`; admin role changes are intended to happen outside the client through backend/Admin SDK workflows.
+Firestore rules restrict participant, portal, and audit data to authenticated ownership flows. User roles are initialized as `case_manager`; admin-level role changes are intended to happen outside the client (for example via backend/Admin SDK workflows).
 
 ## Environment
 
@@ -63,7 +68,7 @@ VITE_FIREBASE_STORAGE_BUCKET="..."
 VITE_FIREBASE_MESSAGING_SENDER_ID="..."
 ```
 
-Firebase config also falls back to `firebase-applet-config.json`, which is used by the AI Studio-generated applet setup. Keep `GEMINI_API_KEY` server-side only.
+Keep `GEMINI_API_KEY` server-side only.
 
 ## Run Locally
 
@@ -79,7 +84,15 @@ Start the Vite dev server:
 npm run dev
 ```
 
-The dev server runs on `http://localhost:3000` and includes a Vite middleware proxy for:
+The dev server runs on `http://localhost:3000`.
+
+For Gemini-backed refine/generation endpoints, run the server process as well:
+
+```sh
+npm run server
+```
+
+This serves:
 
 - `POST /api/refine-goal`
 - `POST /api/refine-notes`
@@ -94,7 +107,7 @@ Build the frontend:
 npm run build
 ```
 
-Start the production Express server:
+Start the production server:
 
 ```sh
 npm start
@@ -119,6 +132,5 @@ The repository includes:
 - `firestore.rules`: ownership-based Firestore rules.
 - `firestore.indexes.json`: Firestore index configuration.
 - `firebase.json`: Firestore database/rules configuration.
-- `firebase-applet-config.json`: applet Firebase configuration fallback.
 
 If Google sign-in fails with an unauthorized-domain error, add the local or deployed domain to Firebase Authentication's authorized domains.
