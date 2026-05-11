@@ -120,6 +120,17 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, '.', '');
   return {
     plugins: [react(), tailwindcss(), geminiProxyPlugin(env.GEMINI_API_KEY, env.GEMINI_MODEL || DEFAULT_MODEL)],
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor_react: ['react', 'react-dom', 'react-router-dom'],
+            vendor_firebase: ['firebase/app', 'firebase/auth', 'firebase/firestore'],
+            vendor_ui: ['lucide-react'],
+          },
+        },
+      },
+    },
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },

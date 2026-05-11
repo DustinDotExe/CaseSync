@@ -166,7 +166,14 @@ export default function ParticipantPortal() {
     if (!token) { setNotFound(true); return; }
     const unsubscribe = onSnapshot(doc(db, 'participantPortals', token), (snap) => {
       if (snap.exists()) {
-        setPortal(snap.data() as PortalData);
+        const data = snap.data() as PortalData;
+        const expired = data.expiresAt?.toDate ? data.expiresAt.toDate().getTime() < Date.now() : false;
+        if (data.isActive === false || expired) {
+          setNotFound(true);
+          setPortal(null);
+          return;
+        }
+        setPortal(data);
       } else {
         setNotFound(true);
       }

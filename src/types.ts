@@ -125,7 +125,10 @@ export interface ParticipantPortal {
   updatedAt: any;
   caseManagerSignature?: Signature;
   participantSignature?: Signature;
+  isActive: boolean;
+  expiresAt: any;
 }
+
 
 export interface StoredGoalTemplate {
   label: string;

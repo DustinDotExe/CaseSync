@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { auth, db } from './firebase';
 import { signInWithPopup, GoogleAuthProvider, signOut, signInWithEmailAndPassword, createUserWithEmailAndPassword, sendPasswordResetEmail, updateProfile } from 'firebase/auth';
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -22,17 +22,25 @@ import {
 } from './components/ui/sheet';
 import { Dialog, DialogContent, DialogTitle } from './components/ui/dialog';
 import { Participant, CurrentUser, StoredTemplateCategory, MilestonePhase, DEFAULT_MILESTONE_PHASES, normalizeGoals, Signature, ParticipantPortal } from './types';
-import CasePlanEditor from './components/CasePlanEditor';
-import ShareAndSign from './components/ShareAndSign';
-import AIGoalRefiner, { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefiner';
-import CourtReport from './components/CourtReport';
-import AuditLog from './components/AuditLog';
-import UserSettings from './components/UserSettings';
+import { DEFAULT_STORED_TEMPLATES } from './components/AIGoalRefiner';
+
+
+
+
+
+
 import CasePlanrLogo from './components/CasePlanrLogo';
 import { DatePicker } from './components/ui/date-picker';
-import CaseloadDashboard from './components/CaseloadDashboard';
+
 import { cn } from './lib/utils';
 
+const CasePlanEditor = lazy(() => import('./components/CasePlanEditor'));
+const ShareAndSign = lazy(() => import('./components/ShareAndSign'));
+const AIGoalRefiner = lazy(() => import('./components/AIGoalRefiner'));
+const CourtReport = lazy(() => import('./components/CourtReport'));
+const AuditLog = lazy(() => import('./components/AuditLog'));
+const UserSettings = lazy(() => import('./components/UserSettings'));
+const CaseloadDashboard = lazy(() => import('./components/CaseloadDashboard'));
 function createShareToken() {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();
@@ -468,8 +476,11 @@ export default function App() {
     if (!selectedParticipant || !user) return;
     try {
       const token = createShareToken();
+      const expiresAt = new Date(Date.now() + (1000 * 60 * 60 * 24 * 30)); // 30 days
       const portalData = {
         ...buildPortalPayload(selectedParticipant, user.uid, user.displayName || '', userTitle, milestonePhases),
+        isActive: true,
+        expiresAt,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       };
@@ -512,6 +523,7 @@ export default function App() {
     try {
       await updateDoc(doc(db, 'participantPortals', selectedParticipant.shareToken), {
         ...buildPortalPayload(selectedParticipant, user.uid, user.displayName || '', userTitle, milestonePhases),
+        isActive: true,
         updatedAt: serverTimestamp(),
       });
     } catch (err) {
@@ -1007,6 +1019,7 @@ export default function App() {
   );
 
   return (
+    <Suspense fallback={<div className="p-6 text-sm text-slate-500">Loading view…</div>}>
     <div className="h-screen bg-slate-50 dark:bg-slate-950 flex flex-col overflow-hidden transition-colors duration-300" data-app-root>
       <div className="h-safe-top bg-white dark:bg-slate-900 w-full shrink-0 no-print"></div>
       {/* Header */}
@@ -1385,5 +1398,6 @@ export default function App() {
       )}
 
     </div>
+    </Suspense>
   );
 }
