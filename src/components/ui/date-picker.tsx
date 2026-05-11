@@ -124,7 +124,7 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
           >
             {value ? (
               <>
-                <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400 hover:opacity-75 transition-opacity">
+                <span className="text-xl font-black text-accent-600 dark:text-accent-400 hover:opacity-75 transition-opacity">
                   {format(parseISO(value), 'MMM d')}
                 </span>
                 <span className="text-sm font-bold text-slate-300 dark:text-slate-700">
@@ -157,9 +157,9 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
             onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
             placeholder={placeholder || 'MM/DD/YYYY'}
             className={cn(
-              'w-full h-9 pl-3 rounded-lg border text-sm bg-white dark:bg-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-burnt-peach-500/30 focus:border-burnt-peach-400 dark:focus:border-burnt-peach-600 placeholder:text-slate-400 dark:placeholder:text-slate-500',
+              'w-full h-9 pl-3 rounded-lg border text-sm bg-white dark:bg-slate-900 transition-colors focus:outline-none focus:ring-2 focus:ring-accent-500/30 focus:border-accent-400 dark:focus:border-accent-600 placeholder:text-slate-400 dark:placeholder:text-slate-500',
               value
-                ? 'border-burnt-peach-300 dark:border-burnt-peach-700 text-slate-700 dark:text-slate-300'
+                ? 'border-accent-300 dark:border-accent-700 text-slate-700 dark:text-slate-300'
                 : 'border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100',
               value ? 'pr-16' : 'pr-9'
             )}
@@ -177,7 +177,7 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
             ref={triggerRef}
             type="button"
             onClick={() => setOpen(v => !v)}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-burnt-peach-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors focus:outline-none"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-accent-500 hover:text-accent-600 dark:hover:text-accent-400 transition-colors focus:outline-none"
           >
             <CalendarDays className="w-4 h-4" />
           </button>
@@ -198,8 +198,8 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
                 className={cn(
                   'flex-1 text-[11px] font-bold py-1 rounded-lg border transition-colors',
                   active
-                    ? 'bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white border-burnt-peach-600 dark:border-burnt-peach-500'
-                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-burnt-peach-300 dark:hover:border-burnt-peach-700 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400'
+                    ? 'bg-accent-600 dark:bg-accent-500 text-white border-accent-600 dark:border-accent-500'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-accent-300 dark:hover:border-accent-700 hover:text-accent-600 dark:hover:text-accent-400'
                 )}
               >
                 {label}
@@ -247,15 +247,15 @@ export function DatePicker({ value, onChange, placeholder = 'Set due date', clas
                 'h-7 w-7 rounded-md text-xs font-medium transition-colors',
                 'flex items-center justify-center',
                 'text-slate-700 dark:text-slate-300',
-                'hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/40 hover:text-burnt-peach-700 dark:hover:text-burnt-peach-300'
+                'hover:bg-accent-50 dark:hover:bg-accent-950/40 hover:text-accent-700 dark:hover:text-accent-300'
               ),
               outside: 'opacity-30',
               disabled: 'opacity-30 cursor-not-allowed',
               hidden: 'invisible',
             }}
             modifiersClassNames={{
-              selected: '!bg-burnt-peach-600 dark:!bg-burnt-peach-500 !text-white hover:!bg-burnt-peach-700',
-              today: 'ring-1 ring-burnt-peach-400 dark:ring-burnt-peach-600',
+              selected: '!bg-accent-600 dark:!bg-accent-500 !text-white hover:!bg-accent-700',
+              today: 'ring-1 ring-accent-400 dark:ring-accent-600',
             }}
             components={{
               Chevron: ({ orientation }) =>

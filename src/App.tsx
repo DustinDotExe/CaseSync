@@ -597,7 +597,7 @@ export default function App() {
             <ChevronDown className={cn("w-3 h-3 transition-transform duration-200", participantsCollapsed && "-rotate-90")} />
             Participants
           </button>
-          <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-900/20 rounded-full">
+          <Button size="icon" variant="ghost" onClick={() => setIsAdding(true)} className="h-8 w-8 text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-900/20 rounded-full">
             <Plus className="w-5 h-5" />
           </Button>
         </div>
@@ -610,7 +610,7 @@ export default function App() {
                 placeholder="Search by name or case..."
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-burnt-peach-500 h-10 rounded-xl"
+                className="pl-10 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-accent-500 h-10 rounded-xl"
               />
             </div>
 
@@ -647,7 +647,7 @@ export default function App() {
         <div className="h-full overflow-y-auto pb-6 custom-scrollbar">
         <div className="space-y-2 px-4 pt-2">
           {isAdding && (
-            <Card className="mb-4 border-burnt-peach-200 dark:border-burnt-peach-900 bg-burnt-peach-50/30 dark:bg-burnt-peach-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
+            <Card className="mb-4 border-accent-200 dark:border-accent-900 bg-accent-50/30 dark:bg-accent-900/10 shadow-inner overflow-hidden animate-in slide-in-from-top-2">
               <CardContent className="p-4">
                 <form onSubmit={handleAddParticipant} className="space-y-4">
                   <div className="space-y-1.5">
@@ -681,7 +681,7 @@ export default function App() {
                     />
                   </div>
                   <div className="flex gap-2 pt-2">
-                    <Button type="submit" size="sm" className="flex-1 bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white font-bold">Create Profile</Button>
+                    <Button type="submit" size="sm" className="flex-1 bg-accent-600 dark:bg-accent-500 text-white font-bold">Create Profile</Button>
                     <Button type="button" size="sm" variant="ghost" onClick={() => setIsAdding(false)} className="font-bold text-slate-500 dark:text-slate-400">Cancel</Button>
                   </div>
                 </form>
@@ -705,7 +705,7 @@ export default function App() {
               className={cn(
                 "w-full text-left p-4 rounded-2xl transition-all duration-200 group relative border",
                 selectedParticipantId === p.id 
-                  ? "bg-burnt-peach-600 border-burnt-peach-600 shadow-lg shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20" 
+                  ? "bg-accent-600 border-accent-600 shadow-lg shadow-accent-100 dark:shadow-accent-900/20" 
                   : "hover:bg-slate-50 dark:hover:bg-slate-800 border-transparent hover:border-slate-100 dark:hover:border-slate-700"
               )}
             >
@@ -718,14 +718,14 @@ export default function App() {
                   "text-[10px] h-4 px-1.5 font-bold uppercase tracking-tight",
                   selectedParticipantId === p.id 
                     ? "bg-white/20 text-white border-white/20" 
-                    : "bg-burnt-peach-50 dark:bg-burnt-peach-900/30 text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-100 dark:border-burnt-peach-900/50"
+                    : "bg-accent-50 dark:bg-accent-900/30 text-accent-600 dark:text-accent-400 border-accent-100 dark:border-accent-900/50"
                 )}>
                   P{p.currentPhase}
                 </Badge>
               </div>
               <div className={cn(
                 "text-[10px] font-mono tracking-tight",
-                selectedParticipantId === p.id ? "text-burnt-peach-200" : "text-slate-400 dark:text-slate-500"
+                selectedParticipantId === p.id ? "text-accent-200" : "text-slate-400 dark:text-slate-500"
               )}>{p.caseNumber}</div>
             </button>
           ))}
@@ -741,8 +741,8 @@ export default function App() {
           className={cn(
             "w-full text-left px-4 py-3 text-xs font-bold transition-colors",
             showDashboard && !selectedParticipantId && !settingsOpen
-              ? "text-burnt-peach-600 dark:text-burnt-peach-400"
-              : "text-slate-700 dark:text-slate-300 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400"
+              ? "text-accent-600 dark:text-accent-400"
+              : "text-slate-700 dark:text-slate-300 hover:text-accent-600 dark:hover:text-accent-400"
           )}
         >
           My Caseload Dashboard
@@ -778,7 +778,7 @@ export default function App() {
       <div className="h-safe-top bg-white w-full shrink-0"></div>
       <div className="flex-1 flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 border-4 border-burnt-peach-200 border-t-burnt-peach-600 rounded-full animate-spin"></div>
+          <div className="w-12 h-12 border-4 border-accent-200 border-t-accent-600 rounded-full animate-spin"></div>
           <div className="text-slate-400 font-medium animate-pulse">Initializing CasePlanr...</div>
         </div>
       </div>
@@ -808,7 +808,7 @@ export default function App() {
                 <button
                   type="button"
                   onClick={() => { setAuthMode('signin'); setResetEmailSent(false); setLoginError(null); }}
-                  className="text-burnt-peach-600 text-sm font-semibold hover:underline"
+                  className="text-accent-600 text-sm font-semibold hover:underline"
                 >
                   Back to sign in
                 </button>
@@ -836,7 +836,7 @@ export default function App() {
                     {loginError}
                   </div>
                 )}
-                <Button type="submit" disabled={authLoading} className="w-full bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white h-11 font-bold rounded-xl transition-all active:scale-[0.98]">
+                <Button type="submit" disabled={authLoading} className="w-full bg-accent-600 hover:bg-accent-700 text-white h-11 font-bold rounded-xl transition-all active:scale-[0.98]">
                   {authLoading ? 'Sending...' : 'Send Reset Email'}
                 </Button>
                 <button
@@ -931,7 +931,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => { setAuthMode('reset'); setLoginError(null); }}
-                      className="text-xs text-burnt-peach-600 hover:underline font-semibold"
+                      className="text-xs text-accent-600 hover:underline font-semibold"
                     >
                       Forgot password?
                     </button>
@@ -942,7 +942,7 @@ export default function App() {
                     {loginError}
                   </div>
                 )}
-                <Button type="submit" disabled={authLoading} className="w-full bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white h-11 font-bold rounded-xl transition-all active:scale-[0.98]">
+                <Button type="submit" disabled={authLoading} className="w-full bg-accent-600 hover:bg-accent-700 text-white h-11 font-bold rounded-xl transition-all active:scale-[0.98]">
                   {authLoading ? (
                     <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mx-auto" />
                   ) : authMode === 'signin' ? 'Sign In' : 'Create Account'}
@@ -955,7 +955,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => { setAuthMode('signup'); setLoginError(null); setAuthDisplayName(''); setAuthJobTitle(''); }}
-                      className="text-burnt-peach-600 font-semibold hover:underline"
+                      className="text-accent-600 font-semibold hover:underline"
                     >
                       Sign up
                     </button>
@@ -965,7 +965,7 @@ export default function App() {
                     <button
                       type="button"
                       onClick={() => { setAuthMode('signin'); setLoginError(null); setAuthDisplayName(''); setAuthJobTitle(''); }}
-                      className="text-burnt-peach-600 font-semibold hover:underline"
+                      className="text-accent-600 font-semibold hover:underline"
                     >
                       Sign in
                     </button>
@@ -1031,7 +1031,7 @@ export default function App() {
           <button
             type="button"
             onClick={handleGoHome}
-            className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-burnt-peach-500"
+            className="flex items-center gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-500"
           >
             <CasePlanrLogo className="w-9 h-9 drop-shadow-md hidden md:block" />
             <h1 className="text-xl md:text-2xl font-black text-slate-900 dark:text-white tracking-tight">CasePlanr</h1>
@@ -1089,7 +1089,7 @@ export default function App() {
             className="absolute top-0 bottom-0 -left-1 w-2 cursor-col-resize group"
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            <div className="absolute left-1/2 -translate-x-1/2 inset-y-0 w-px bg-transparent group-hover:bg-burnt-peach-500/50 dark:group-hover:bg-burnt-peach-400/50 transition-colors duration-150" />
+            <div className="absolute left-1/2 -translate-x-1/2 inset-y-0 w-px bg-transparent group-hover:bg-accent-500/50 dark:group-hover:bg-accent-400/50 transition-colors duration-150" />
           </div>
         </div>
 
@@ -1120,7 +1120,7 @@ export default function App() {
                         <Input 
                           value={editedName}
                           onChange={(e) => setEditedName(e.target.value)}
-                          className="text-2xl font-black h-12 bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-800 focus-visible:ring-burnt-peach-500"
+                          className="text-2xl font-black h-12 bg-white dark:bg-slate-900 border-accent-200 dark:border-accent-800 focus-visible:ring-accent-500"
                           autoFocus
                           placeholder="Participant Name"
                         />
@@ -1151,7 +1151,7 @@ export default function App() {
                             variant="ghost" 
                             size="icon" 
                             onClick={startEditingParticipant}
-                            className="text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 rounded-full h-8 w-8"
+                            className="text-slate-400 dark:text-slate-500 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30 rounded-full h-8 w-8"
                             title="Edit Profile"
                           >
                             <Pencil className="w-4 h-4" />
@@ -1176,7 +1176,7 @@ export default function App() {
                         <Input 
                           value={editedCaseNumber}
                           onChange={(e) => setEditedCaseNumber(e.target.value)}
-                          className="h-8 w-40 font-mono text-xs bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-800 focus-visible:ring-burnt-peach-500"
+                          className="h-8 w-40 font-mono text-xs bg-white dark:bg-slate-900 border-accent-200 dark:border-accent-800 focus-visible:ring-accent-500"
                           placeholder="Case Number"
                           onKeyDown={(e) => {
                             if (e.key === 'Enter') handleUpdateParticipant();
@@ -1199,14 +1199,14 @@ export default function App() {
                   <div className="space-y-1 pr-3 sm:pr-5">
                     <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Current Phase</p>
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{selectedParticipant.currentPhase}</span>
+                      <span className="text-xl font-black text-accent-600 dark:text-accent-400">{selectedParticipant.currentPhase}</span>
                       <span className="text-slate-300 dark:text-slate-700 font-bold text-sm">/ {milestonePhases.length}</span>
                     </div>
                   </div>
                   <div className="space-y-1 px-3 sm:px-5">
                     <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Progress</p>
                     <div className="space-y-1">
-                      <span className="text-xl font-black text-burnt-peach-600 dark:text-burnt-peach-400">{Math.round((selectedParticipant.currentPhase / milestonePhases.length) * 100)}%</span>
+                      <span className="text-xl font-black text-accent-600 dark:text-accent-400">{Math.round((selectedParticipant.currentPhase / milestonePhases.length) * 100)}%</span>
                       <Progress value={(selectedParticipant.currentPhase / milestonePhases.length) * 100} className="h-1.5 w-full max-w-[4rem] bg-slate-100 dark:bg-slate-800" />
                     </div>
                   </div>
@@ -1265,7 +1265,7 @@ export default function App() {
                         onClick={() => setShareAndSignOpen(true)}
                         className="w-full sm:w-auto border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-semibold shadow-sm transition-all active:scale-[0.98]"
                       >
-                        <Link2 className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+                        <Link2 className="w-4 h-4 text-accent-600 dark:text-accent-400" />
                         Share & Sign
                       </Button>
                     )}
@@ -1338,7 +1338,7 @@ export default function App() {
                 </div>
                 <Button
                   onClick={startAddingParticipant}
-                  className="bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-bold rounded-xl shadow-lg shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 px-6"
+                  className="bg-accent-600 hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-600 text-white font-bold rounded-xl shadow-lg shadow-accent-100 dark:shadow-accent-900/20 px-6"
                 >
                   <Plus className="w-4 h-4" />
                   Create New Case Plan

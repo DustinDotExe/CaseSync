@@ -289,11 +289,11 @@ export default function CasePlanEditor({ participant, currentUser, milestonePhas
                     id={domainId} 
                     checked={isSelected}
                     onCheckedChange={() => handleToggleIrasDomain(domain)}
-                    className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-burnt-peach-600 data-[state=checked]:border-burnt-peach-600"
+                    className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-accent-600 data-[state=checked]:border-accent-600"
                   />
                   <Label 
                     htmlFor={domainId}
-                    className={`text-sm font-medium cursor-pointer transition-colors ${isSelected ? 'text-burnt-peach-700 dark:text-burnt-peach-400' : 'text-slate-500 dark:text-slate-400'}`}
+                    className={`text-sm font-medium cursor-pointer transition-colors ${isSelected ? 'text-accent-700 dark:text-accent-400' : 'text-slate-500 dark:text-slate-400'}`}
                   >
                     {domain}
                   </Label>
@@ -320,11 +320,11 @@ export default function CasePlanEditor({ participant, currentUser, milestonePhas
                   id={`phase-${i + 1}`}
                   checked={isCompleted}
                   onCheckedChange={() => handleToggleMilestone(phaseKey, i)}
-                  className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-burnt-peach-600 data-[state=checked]:border-burnt-peach-600"
+                  className="w-5 h-5 border-slate-300 dark:border-slate-700 data-[state=checked]:bg-accent-600 data-[state=checked]:border-accent-600"
                 />
                 <Label
                   htmlFor={`phase-${i + 1}`}
-                  className={`text-sm font-medium cursor-pointer transition-colors ${isCompleted ? 'text-burnt-peach-700 dark:text-burnt-peach-400' : 'text-slate-500 dark:text-slate-400'}`}
+                  className={`text-sm font-medium cursor-pointer transition-colors ${isCompleted ? 'text-accent-700 dark:text-accent-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
                   Phase {i + 1}: {mp.label}
                 </Label>
@@ -355,12 +355,12 @@ export default function CasePlanEditor({ participant, currentUser, milestonePhas
               variant="outline" 
               onClick={handleAIRefine} 
               disabled={isRefining}
-              className="text-burnt-peach-600 dark:text-burnt-peach-200 border-burnt-peach-200 dark:border-burnt-peach-900 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
+              className="text-accent-600 dark:text-accent-200 border-accent-200 dark:border-accent-900 hover:bg-accent-50 dark:hover:bg-accent-950/30"
               title="AI Refine"
             >
               {isRefining ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wand2 className="w-4 h-4" />}
             </Button>
-            <Button size="sm" onClick={handleSaveNotes} disabled={saving} className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white">
+            <Button size="sm" onClick={handleSaveNotes} disabled={saving} className="bg-accent-600 dark:bg-accent-500 text-white">
               <Save className="w-4 h-4" />
               {saving ? 'Saving...' : 'Save'}
             </Button>
@@ -373,11 +373,11 @@ export default function CasePlanEditor({ participant, currentUser, milestonePhas
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Enter detailed notes about the participant's progress, challenges, and court appearances..."
-              className="min-h-[150px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus-visible:ring-burnt-peach-500 pr-10 resize-none overflow-hidden"
+              className="min-h-[150px] border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 focus-visible:ring-accent-500 pr-10 resize-none overflow-hidden"
             />
             {isRefining && (
               <div className="absolute inset-0 bg-white/70 dark:bg-slate-950/70 rounded-md flex items-start justify-center pt-6 z-10 pointer-events-none">
-                <div className="flex items-center gap-2 text-xs font-bold text-burnt-peach-600 dark:text-burnt-peach-400 animate-pulse bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-burnt-peach-200 dark:border-burnt-peach-800 shadow-sm">
+                <div className="flex items-center gap-2 text-xs font-bold text-accent-600 dark:text-accent-400 animate-pulse bg-white dark:bg-slate-900 px-3 py-1.5 rounded-full border border-accent-200 dark:border-accent-800 shadow-sm">
                   <Wand2 className="w-3 h-3" />
                   AI is refining...
                 </div>

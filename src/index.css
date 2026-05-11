@@ -4,17 +4,17 @@
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 
-  --color-burnt-peach-50: #eff6ff;
-  --color-burnt-peach-100: #dbeafe;
-  --color-burnt-peach-200: #bfdbfe;
-  --color-burnt-peach-300: #93c5fd;
-  --color-burnt-peach-400: #60a5fa;
-  --color-burnt-peach-500: #3b82f6;
-  --color-burnt-peach-600: #2563eb;
-  --color-burnt-peach-700: #1d4ed8;
-  --color-burnt-peach-800: #1e40af;
-  --color-burnt-peach-900: #1e3a8a;
-  --color-burnt-peach-950: #172554;
+  --color-accent-50: #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-200: #bfdbfe;
+  --color-accent-300: #93c5fd;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
+  --color-accent-950: #172554;
 }
 
 @layer base {
@@ -53,17 +53,17 @@
 /* ── Palette overrides ───────────────────────────────────────────────────── */
 /* Orange (Tailwind orange) */
 :root[data-palette="orange"] {
-  --color-burnt-peach-50:  #fff7ed;
-  --color-burnt-peach-100: #ffedd5;
-  --color-burnt-peach-200: #fed7aa;
-  --color-burnt-peach-300: #fdba74;
-  --color-burnt-peach-400: #fb923c;
-  --color-burnt-peach-500: #f97316;
-  --color-burnt-peach-600: #ea580c;
-  --color-burnt-peach-700: #c2410c;
-  --color-burnt-peach-800: #9a3412;
-  --color-burnt-peach-900: #7c2d12;
-  --color-burnt-peach-950: #431407;
+  --color-accent-50:  #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-200: #fed7aa;
+  --color-accent-300: #fdba74;
+  --color-accent-400: #fb923c;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+  --color-accent-800: #9a3412;
+  --color-accent-900: #7c2d12;
+  --color-accent-950: #431407;
   --primary: #c2410c;
   --primary-foreground: #fff7ed;
   --accent: #fff7ed;
@@ -71,17 +71,17 @@
   --ring: #fb923c;
 }
 .dark[data-palette="orange"] {
-  --color-burnt-peach-50:  #fff7ed;
-  --color-burnt-peach-100: #ffedd5;
-  --color-burnt-peach-200: #fed7aa;
-  --color-burnt-peach-300: #fdba74;
-  --color-burnt-peach-400: #fb923c;
-  --color-burnt-peach-500: #f97316;
-  --color-burnt-peach-600: #ea580c;
-  --color-burnt-peach-700: #c2410c;
-  --color-burnt-peach-800: #9a3412;
-  --color-burnt-peach-900: #7c2d12;
-  --color-burnt-peach-950: #431407;
+  --color-accent-50:  #fff7ed;
+  --color-accent-100: #ffedd5;
+  --color-accent-200: #fed7aa;
+  --color-accent-300: #fdba74;
+  --color-accent-400: #fb923c;
+  --color-accent-500: #f97316;
+  --color-accent-600: #ea580c;
+  --color-accent-700: #c2410c;
+  --color-accent-800: #9a3412;
+  --color-accent-900: #7c2d12;
+  --color-accent-950: #431407;
   --primary: #fb923c;
   --primary-foreground: #431407;
   --accent: #7c2d12;
@@ -91,17 +91,17 @@
 
 /* Blue */
 :root[data-palette="blue"] {
-  --color-burnt-peach-50:  #eff6ff;
-  --color-burnt-peach-100: #dbeafe;
-  --color-burnt-peach-200: #bfdbfe;
-  --color-burnt-peach-300: #93c5fd;
-  --color-burnt-peach-400: #60a5fa;
-  --color-burnt-peach-500: #3b82f6;
-  --color-burnt-peach-600: #2563eb;
-  --color-burnt-peach-700: #1d4ed8;
-  --color-burnt-peach-800: #1e40af;
-  --color-burnt-peach-900: #1e3a8a;
-  --color-burnt-peach-950: #172554;
+  --color-accent-50:  #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-200: #bfdbfe;
+  --color-accent-300: #93c5fd;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
+  --color-accent-950: #172554;
   --primary: #1d4ed8;
   --primary-foreground: #eff6ff;
   --accent: #eff6ff;
@@ -109,17 +109,17 @@
   --ring: #60a5fa;
 }
 .dark[data-palette="blue"] {
-  --color-burnt-peach-50:  #eff6ff;
-  --color-burnt-peach-100: #dbeafe;
-  --color-burnt-peach-200: #bfdbfe;
-  --color-burnt-peach-300: #93c5fd;
-  --color-burnt-peach-400: #60a5fa;
-  --color-burnt-peach-500: #3b82f6;
-  --color-burnt-peach-600: #2563eb;
-  --color-burnt-peach-700: #1d4ed8;
-  --color-burnt-peach-800: #1e40af;
-  --color-burnt-peach-900: #1e3a8a;
-  --color-burnt-peach-950: #172554;
+  --color-accent-50:  #eff6ff;
+  --color-accent-100: #dbeafe;
+  --color-accent-200: #bfdbfe;
+  --color-accent-300: #93c5fd;
+  --color-accent-400: #60a5fa;
+  --color-accent-500: #3b82f6;
+  --color-accent-600: #2563eb;
+  --color-accent-700: #1d4ed8;
+  --color-accent-800: #1e40af;
+  --color-accent-900: #1e3a8a;
+  --color-accent-950: #172554;
   --primary: #60a5fa;
   --primary-foreground: #172554;
   --accent: #1e3a8a;
@@ -129,17 +129,17 @@
 
 /* Red */
 :root[data-palette="red"] {
-  --color-burnt-peach-50:  #fef2f2;
-  --color-burnt-peach-100: #fee2e2;
-  --color-burnt-peach-200: #fecaca;
-  --color-burnt-peach-300: #fca5a5;
-  --color-burnt-peach-400: #f87171;
-  --color-burnt-peach-500: #ef4444;
-  --color-burnt-peach-600: #dc2626;
-  --color-burnt-peach-700: #b91c1c;
-  --color-burnt-peach-800: #991b1b;
-  --color-burnt-peach-900: #7f1d1d;
-  --color-burnt-peach-950: #450a0a;
+  --color-accent-50:  #fef2f2;
+  --color-accent-100: #fee2e2;
+  --color-accent-200: #fecaca;
+  --color-accent-300: #fca5a5;
+  --color-accent-400: #f87171;
+  --color-accent-500: #ef4444;
+  --color-accent-600: #dc2626;
+  --color-accent-700: #b91c1c;
+  --color-accent-800: #991b1b;
+  --color-accent-900: #7f1d1d;
+  --color-accent-950: #450a0a;
   --primary: #b91c1c;
   --primary-foreground: #fef2f2;
   --accent: #fef2f2;
@@ -147,17 +147,17 @@
   --ring: #f87171;
 }
 .dark[data-palette="red"] {
-  --color-burnt-peach-50:  #fef2f2;
-  --color-burnt-peach-100: #fee2e2;
-  --color-burnt-peach-200: #fecaca;
-  --color-burnt-peach-300: #fca5a5;
-  --color-burnt-peach-400: #f87171;
-  --color-burnt-peach-500: #ef4444;
-  --color-burnt-peach-600: #dc2626;
-  --color-burnt-peach-700: #b91c1c;
-  --color-burnt-peach-800: #991b1b;
-  --color-burnt-peach-900: #7f1d1d;
-  --color-burnt-peach-950: #450a0a;
+  --color-accent-50:  #fef2f2;
+  --color-accent-100: #fee2e2;
+  --color-accent-200: #fecaca;
+  --color-accent-300: #fca5a5;
+  --color-accent-400: #f87171;
+  --color-accent-500: #ef4444;
+  --color-accent-600: #dc2626;
+  --color-accent-700: #b91c1c;
+  --color-accent-800: #991b1b;
+  --color-accent-900: #7f1d1d;
+  --color-accent-950: #450a0a;
   --primary: #f87171;
   --primary-foreground: #450a0a;
   --accent: #7f1d1d;
@@ -167,17 +167,17 @@
 
 /* Green */
 :root[data-palette="green"] {
-  --color-burnt-peach-50:  #f0fdf4;
-  --color-burnt-peach-100: #dcfce7;
-  --color-burnt-peach-200: #bbf7d0;
-  --color-burnt-peach-300: #86efac;
-  --color-burnt-peach-400: #4ade80;
-  --color-burnt-peach-500: #22c55e;
-  --color-burnt-peach-600: #16a34a;
-  --color-burnt-peach-700: #15803d;
-  --color-burnt-peach-800: #166534;
-  --color-burnt-peach-900: #14532d;
-  --color-burnt-peach-950: #052e16;
+  --color-accent-50:  #f0fdf4;
+  --color-accent-100: #dcfce7;
+  --color-accent-200: #bbf7d0;
+  --color-accent-300: #86efac;
+  --color-accent-400: #4ade80;
+  --color-accent-500: #22c55e;
+  --color-accent-600: #16a34a;
+  --color-accent-700: #15803d;
+  --color-accent-800: #166534;
+  --color-accent-900: #14532d;
+  --color-accent-950: #052e16;
   --primary: #15803d;
   --primary-foreground: #f0fdf4;
   --accent: #f0fdf4;
@@ -185,17 +185,17 @@
   --ring: #4ade80;
 }
 .dark[data-palette="green"] {
-  --color-burnt-peach-50:  #f0fdf4;
-  --color-burnt-peach-100: #dcfce7;
-  --color-burnt-peach-200: #bbf7d0;
-  --color-burnt-peach-300: #86efac;
-  --color-burnt-peach-400: #4ade80;
-  --color-burnt-peach-500: #22c55e;
-  --color-burnt-peach-600: #16a34a;
-  --color-burnt-peach-700: #15803d;
-  --color-burnt-peach-800: #166534;
-  --color-burnt-peach-900: #14532d;
-  --color-burnt-peach-950: #052e16;
+  --color-accent-50:  #f0fdf4;
+  --color-accent-100: #dcfce7;
+  --color-accent-200: #bbf7d0;
+  --color-accent-300: #86efac;
+  --color-accent-400: #4ade80;
+  --color-accent-500: #22c55e;
+  --color-accent-600: #16a34a;
+  --color-accent-700: #15803d;
+  --color-accent-800: #166534;
+  --color-accent-900: #14532d;
+  --color-accent-950: #052e16;
   --primary: #4ade80;
   --primary-foreground: #052e16;
   --accent: #14532d;
@@ -203,17 +203,17 @@
   --ring: #16a34a;
 }
 :root[data-palette="purple"] {
-  --color-burnt-peach-50:  #faf5ff;
-  --color-burnt-peach-100: #f3e8ff;
-  --color-burnt-peach-200: #e9d5ff;
-  --color-burnt-peach-300: #d8b4fe;
-  --color-burnt-peach-400: #c084fc;
-  --color-burnt-peach-500: #a855f7;
-  --color-burnt-peach-600: #9333ea;
-  --color-burnt-peach-700: #7e22ce;
-  --color-burnt-peach-800: #6b21a8;
-  --color-burnt-peach-900: #581c87;
-  --color-burnt-peach-950: #3b0764;
+  --color-accent-50:  #faf5ff;
+  --color-accent-100: #f3e8ff;
+  --color-accent-200: #e9d5ff;
+  --color-accent-300: #d8b4fe;
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  --color-accent-600: #9333ea;
+  --color-accent-700: #7e22ce;
+  --color-accent-800: #6b21a8;
+  --color-accent-900: #581c87;
+  --color-accent-950: #3b0764;
   --primary: #7e22ce;
   --primary-foreground: #faf5ff;
   --accent: #faf5ff;
@@ -221,17 +221,17 @@
   --ring: #c084fc;
 }
 .dark[data-palette="purple"] {
-  --color-burnt-peach-50:  #faf5ff;
-  --color-burnt-peach-100: #f3e8ff;
-  --color-burnt-peach-200: #e9d5ff;
-  --color-burnt-peach-300: #d8b4fe;
-  --color-burnt-peach-400: #c084fc;
-  --color-burnt-peach-500: #a855f7;
-  --color-burnt-peach-600: #9333ea;
-  --color-burnt-peach-700: #7e22ce;
-  --color-burnt-peach-800: #6b21a8;
-  --color-burnt-peach-900: #581c87;
-  --color-burnt-peach-950: #3b0764;
+  --color-accent-50:  #faf5ff;
+  --color-accent-100: #f3e8ff;
+  --color-accent-200: #e9d5ff;
+  --color-accent-300: #d8b4fe;
+  --color-accent-400: #c084fc;
+  --color-accent-500: #a855f7;
+  --color-accent-600: #9333ea;
+  --color-accent-700: #7e22ce;
+  --color-accent-800: #6b21a8;
+  --color-accent-900: #581c87;
+  --color-accent-950: #3b0764;
   --primary: #c084fc;
   --primary-foreground: #3b0764;
   --accent: #581c87;
@@ -358,7 +358,7 @@
     flex: 0 0 1rem !important;
     align-items: center !important;
     justify-content: center !important;
-    border: 1px solid var(--color-burnt-peach-600) !important;
+    border: 1px solid var(--color-accent-600) !important;
     border-radius: 4px !important;
     background: white !important;
     color: white !important;
@@ -367,8 +367,8 @@
   }
 
   .case-plan-print-checkbox[data-checked="true"] {
-    background: var(--color-burnt-peach-600) !important;
-    border-color: var(--color-burnt-peach-600) !important;
+    background: var(--color-accent-600) !important;
+    border-color: var(--color-accent-600) !important;
   }
 
   .case-plan-print-checkbox[data-checked="true"]::after {

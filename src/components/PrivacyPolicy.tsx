@@ -14,7 +14,7 @@ export default function PrivacyPolicy() {
             CasePlanr is a case management tool for authorized court case managers. This policy explains what
             information we collect, how we use it, and how we protect it. CasePlanr is operated by{' '}
             <strong>Dustin Burton</strong>. Questions may be directed to{' '}
-            <a href="mailto:dustin.a.burton@gmail.com" className="text-burnt-peach-600 hover:underline font-medium">
+            <a href="mailto:dustin.a.burton@gmail.com" className="text-accent-600 hover:underline font-medium">
               dustin.a.burton@gmail.com
             </a>.
           </p>
@@ -104,7 +104,7 @@ export default function PrivacyPolicy() {
               href="https://policies.google.com/privacy"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-burnt-peach-600 hover:underline font-medium"
+              className="text-accent-600 hover:underline font-medium"
             >
               Google&rsquo;s Privacy Policy
             </a>.
@@ -116,7 +116,7 @@ export default function PrivacyPolicy() {
             Your case records and account data are retained as long as your account exists. You may delete individual
             participant profiles within the app at any time. To request deletion of your account and all associated
             data, email{' '}
-            <a href="mailto:dustin.a.burton@gmail.com" className="text-burnt-peach-600 hover:underline font-medium">
+            <a href="mailto:dustin.a.burton@gmail.com" className="text-accent-600 hover:underline font-medium">
               dustin.a.burton@gmail.com
             </a>{' '}
             and we will process your request within 30 days. Audit log entries for deleted participant profiles are
@@ -141,7 +141,7 @@ export default function PrivacyPolicy() {
         <Section title="Contact">
           <p>
             For privacy questions or data deletion requests, contact:{' '}
-            <a href="mailto:dustin.a.burton@gmail.com" className="text-burnt-peach-600 hover:underline font-medium">
+            <a href="mailto:dustin.a.burton@gmail.com" className="text-accent-600 hover:underline font-medium">
               dustin.a.burton@gmail.com
             </a>
           </p>

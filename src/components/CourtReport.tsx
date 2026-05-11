@@ -128,13 +128,13 @@ export default function CourtReport({
           {/* IRAS Domains */}
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-              <LayoutDashboard className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+              <LayoutDashboard className="w-4 h-4 text-accent-600 dark:text-accent-400" />
               Target Domains
             </h3>
             <div className="flex flex-wrap gap-2">
               {participant.irasDomains && participant.irasDomains.length > 0 ? (
                 participant.irasDomains.map((domain, i) => (
-                  <Badge key={i} variant="outline" className="border-burnt-peach-200 dark:border-burnt-peach-900 bg-burnt-peach-50 dark:bg-burnt-peach-950/30 text-burnt-peach-700 dark:text-burnt-peach-400 font-bold px-3 py-1">
+                  <Badge key={i} variant="outline" className="border-accent-200 dark:border-accent-900 bg-accent-50 dark:bg-accent-950/30 text-accent-700 dark:text-accent-400 font-bold px-3 py-1">
                     {domain}
                   </Badge>
                 ))
@@ -147,7 +147,7 @@ export default function CourtReport({
           <Separator className="bg-slate-100 dark:bg-slate-800" />
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-              <Target className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+              <Target className="w-4 h-4 text-accent-600 dark:text-accent-400" />
               Active SMART Goals
             </h3>
             <div className="space-y-3">
@@ -197,13 +197,13 @@ export default function CourtReport({
                   };
 
                   return (
-                    <div key={goal.id} className={`pl-4 border-l-2 py-1.5 group ${overdue ? 'border-red-300 dark:border-red-800' : 'border-burnt-peach-200 dark:border-burnt-peach-900'}`}>
+                    <div key={goal.id} className={`pl-4 border-l-2 py-1.5 group ${overdue ? 'border-red-300 dark:border-red-800' : 'border-accent-200 dark:border-accent-900'}`}>
                       <div className="flex items-center gap-3">
                         <Checkbox
                           id={`goal-${goal.id}`}
                           checked={isCompleted}
                           onCheckedChange={handleToggleGoal}
-                          className="w-4 h-4 no-print border-slate-300 dark:border-slate-700 data-[state=checked]:bg-burnt-peach-600 data-[state=checked]:border-burnt-peach-600"
+                          className="w-4 h-4 no-print border-slate-300 dark:border-slate-700 data-[state=checked]:bg-accent-600 data-[state=checked]:border-accent-600"
                         />
                         <span
                           aria-hidden="true"
@@ -250,7 +250,7 @@ export default function CourtReport({
           {/* Notes Section */}
           <section className="space-y-4">
             <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
-              <FileText className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+              <FileText className="w-4 h-4 text-accent-600 dark:text-accent-400" />
               Case Manager Observations
             </h3>
             <div className="bg-slate-50 dark:bg-slate-950 p-6 rounded-xl border border-slate-100 dark:border-slate-800 min-h-[100px] print:bg-white print:border-none print:p-0">
@@ -284,7 +284,7 @@ export default function CourtReport({
         {actions}
         <Button
           onClick={() => window.print()}
-          className="w-full sm:w-auto bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-semibold shadow-sm shadow-burnt-peach-100 dark:shadow-burnt-peach-900/20 transition-all active:scale-[0.98]"
+          className="w-full sm:w-auto bg-accent-600 hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-600 text-white font-semibold shadow-sm shadow-accent-100 dark:shadow-accent-900/20 transition-all active:scale-[0.98]"
         >
           <Printer className="w-4 h-4" />
           Print / Save as PDF

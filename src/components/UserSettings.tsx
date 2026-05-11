@@ -56,7 +56,7 @@ function SectionHeader({ label, description, action }: {
   return (
     <div className="flex items-center justify-between px-4 sm:px-6 pt-4 sm:pt-5 pb-3 sm:pb-4 border-b border-slate-100 dark:border-slate-800">
       <div>
-        <h2 className="text-sm font-bold text-burnt-peach-600 dark:text-burnt-peach-400 tracking-wide">{label}</h2>
+        <h2 className="text-sm font-bold text-accent-600 dark:text-accent-400 tracking-wide">{label}</h2>
         {description && <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{description}</p>}
       </div>
       {action}
@@ -230,7 +230,7 @@ export default function UserSettings({
                 <Input
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
-                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-burnt-peach-500"
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-accent-500"
                   placeholder="Your name"
                 />
               </div>
@@ -239,7 +239,7 @@ export default function UserSettings({
                 <Input
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-burnt-peach-500"
+                  className="bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-accent-500"
                   placeholder="e.g. Court Case Manager"
                 />
               </div>
@@ -249,7 +249,7 @@ export default function UserSettings({
                 onClick={handleSaveProfile}
                 disabled={saving || !displayName.trim() || !title.trim()}
                 size="sm"
-                className="bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white px-5 rounded-xl w-full sm:w-auto"
+                className="bg-accent-600 hover:bg-accent-700 text-white px-5 rounded-xl w-full sm:w-auto"
               >
                 {saved ? <><Check className="w-3.5 h-3.5 mr-1.5" />Saved</> : saving ? 'Saving…' : 'Save Profile'}
               </Button>
@@ -272,7 +272,7 @@ export default function UserSettings({
                   'rounded-xl text-white px-5 w-full sm:w-auto',
                   resetSent
                     ? 'bg-green-600 hover:bg-green-600'
-                    : 'bg-burnt-peach-600 hover:bg-burnt-peach-700'
+                    : 'bg-accent-600 hover:bg-accent-700'
                 )}
               >
                 {resetSent ? <><Check className="w-3.5 h-3.5 mr-1.5" />Email sent</> : resetSending ? 'Sending…' : 'Reset Password'}
@@ -367,20 +367,20 @@ export default function UserSettings({
                                 value={editLabel}
                                 onChange={e => setEditLabel(e.target.value)}
                                 placeholder="Label"
-                                className="h-8 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                                className="h-8 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500"
                                 autoFocus
                               />
                               <Textarea
                                 value={editNotes}
                                 onChange={e => setEditNotes(e.target.value)}
                                 placeholder="Notes"
-                                className="text-sm min-h-[64px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
+                                className="text-sm min-h-[64px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500 resize-none"
                               />
                               <div className="flex gap-2 justify-end">
                                 <Button size="sm" variant="ghost" onClick={() => setEditingKey(null)} className="text-sm text-slate-500">
                                   <X className="w-3 h-3 mr-1" /> Cancel
                                 </Button>
-                                <Button size="sm" onClick={() => saveEditTemplate(catIdx, tmplIdx)} className="text-sm bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white">
+                                <Button size="sm" onClick={() => saveEditTemplate(catIdx, tmplIdx)} className="text-sm bg-accent-600 hover:bg-accent-700 text-white">
                                   <Check className="w-3 h-3 mr-1" /> Save
                                 </Button>
                               </div>
@@ -389,7 +389,7 @@ export default function UserSettings({
                             <div className="flex items-center justify-between gap-2 group">
                               <span className="text-sm text-slate-600 dark:text-slate-400 leading-snug">{tmpl.label}</span>
                               <div className="flex gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button variant="ghost" size="icon" onClick={() => startEditTemplate(catIdx, tmplIdx)} className="h-7 w-7 text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400">
+                                <Button variant="ghost" size="icon" onClick={() => startEditTemplate(catIdx, tmplIdx)} className="h-7 w-7 text-slate-400 hover:text-accent-600 dark:hover:text-accent-400">
                                   <Pencil className="w-3 h-3" />
                                 </Button>
                                 <Button variant="ghost" size="icon" onClick={() => deleteTemplate(catIdx, tmplIdx)} className="h-7 w-7 text-slate-400 hover:text-red-500 dark:hover:text-red-400">
@@ -408,20 +408,20 @@ export default function UserSettings({
                           value={newLabel}
                           onChange={e => setNewLabel(e.target.value)}
                           placeholder="Label"
-                          className="h-8 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                          className="h-8 text-sm bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500"
                           autoFocus
                         />
                         <Textarea
                           value={newNotes}
                           onChange={e => setNewNotes(e.target.value)}
                           placeholder="Notes (optional)"
-                          className="text-sm min-h-[56px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
+                          className="text-sm min-h-[56px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500 resize-none"
                         />
                         <div className="flex gap-2 justify-end">
                           <Button size="sm" variant="ghost" onClick={() => { setAddingToCat(null); setNewLabel(''); setNewNotes(''); }} className="text-sm text-slate-500">
                             <X className="w-3 h-3 mr-1" /> Cancel
                           </Button>
-                          <Button size="sm" onClick={() => addTemplate(catIdx)} disabled={!newLabel.trim()} className="text-sm bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white">
+                          <Button size="sm" onClick={() => addTemplate(catIdx)} disabled={!newLabel.trim()} className="text-sm bg-accent-600 hover:bg-accent-700 text-white">
                             <Check className="w-3 h-3 mr-1" /> Add
                           </Button>
                         </div>
@@ -429,7 +429,7 @@ export default function UserSettings({
                     ) : (
                       <button
                         onClick={() => { setAddingToCat(catIdx); setEditingKey(null); setNewLabel(''); setNewNotes(''); }}
-                        className="w-full flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors"
+                        className="w-full flex items-center gap-1.5 px-4 sm:px-6 py-3 text-sm text-slate-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-colors"
                       >
                         <Plus className="w-3 h-3" /> Add template
                       </button>
@@ -490,7 +490,7 @@ export default function UserSettings({
             {localPhases.length < 10 && (
               <button
                 onClick={() => persistPhases([...localPhases, { label: '' }])}
-                className="w-full flex items-center gap-2 px-4 sm:px-6 py-3 text-sm text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/20 transition-colors"
+                className="w-full flex items-center gap-2 px-4 sm:px-6 py-3 text-sm text-slate-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/20 transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" /> Add phase
               </button>
@@ -511,11 +511,11 @@ export default function UserSettings({
 
         {/* Legal */}
         <div className="flex items-center justify-center gap-4 pb-4">
-          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors">
+          <a href="/privacy" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 dark:text-slate-500 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
             Privacy Policy
           </a>
           <span className="text-slate-300 dark:text-slate-700 select-none">&middot;</span>
-          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 dark:text-slate-500 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 transition-colors">
+          <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-xs text-slate-400 dark:text-slate-500 hover:text-accent-600 dark:hover:text-accent-400 transition-colors">
             Terms of Service
           </a>
         </div>

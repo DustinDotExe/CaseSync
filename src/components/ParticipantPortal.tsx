@@ -58,7 +58,7 @@ function InlineDateDisplay({ value }: { value?: string | null }) {
     const year = String(date.getFullYear()).slice(-2);
     return (
       <span className="flex items-baseline gap-1 whitespace-nowrap min-w-0">
-        <span className="text-xl font-black text-burnt-peach-600">
+        <span className="text-xl font-black text-accent-600">
           {date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
         <span className="text-sm font-bold text-slate-300">
@@ -67,7 +67,7 @@ function InlineDateDisplay({ value }: { value?: string | null }) {
       </span>
     );
   } catch {
-    return <span className="text-xl font-black text-burnt-peach-600">{value}</span>;
+    return <span className="text-xl font-black text-accent-600">{value}</span>;
   }
 }
 
@@ -86,8 +86,8 @@ function SignatureDisplay({ sig, label }: { sig: Signature; label: string }) {
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
       <div className="flex items-center gap-2 min-w-0">
-        <CheckCircle2 className="w-4 h-4 text-burnt-peach-600 shrink-0" />
-        <span className="text-[11px] font-bold text-burnt-peach-700 uppercase tracking-wider truncate">{label} Signed</span>
+        <CheckCircle2 className="w-4 h-4 text-accent-600 shrink-0" />
+        <span className="text-[11px] font-bold text-accent-700 uppercase tracking-wider truncate">{label} Signed</span>
       </div>
       {sig.type === 'drawn' && sig.imageData ? (
         <img src={sig.imageData} alt={`${label} signature`} className="max-h-20 max-w-full rounded-lg border border-slate-100 bg-white" />
@@ -113,7 +113,7 @@ function SectionCard({
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3 sm:px-5">
-        <Icon className="w-4 h-4 text-burnt-peach-600 shrink-0" />
+        <Icon className="w-4 h-4 text-accent-600 shrink-0" />
         <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">{title}</h3>
       </div>
       <div className="p-4 sm:p-5">{children}</div>
@@ -124,7 +124,7 @@ function SectionCard({
 function DomainPill({ domain }: { domain: string }) {
   const Icon = IRAS_DOMAIN_ICONS[domain] || ClipboardList;
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-lg border border-burnt-peach-100 bg-burnt-peach-50 px-2.5 py-1.5 text-xs font-semibold text-burnt-peach-700">
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-accent-100 bg-accent-50 px-2.5 py-1.5 text-xs font-semibold text-accent-700">
       <Icon className="w-3.5 h-3.5 shrink-0" />
       <span>{domain}</span>
     </span>
@@ -135,7 +135,7 @@ function GoalCard({ goal, completed, today }: { goal: GoalEntry; completed?: boo
   const overdue = !!goal.dueDate && goal.dueDate < today && !completed;
 
   return (
-    <div className={`rounded-xl border p-3.5 ${completed ? 'border-burnt-peach-100 bg-burnt-peach-50/70' : overdue ? 'border-red-100 bg-red-50/70' : 'border-slate-100 bg-slate-50'}`}>
+    <div className={`rounded-xl border p-3.5 ${completed ? 'border-accent-100 bg-accent-50/70' : overdue ? 'border-red-100 bg-red-50/70' : 'border-slate-100 bg-slate-50'}`}>
       <div className="min-w-0 space-y-1.5">
         <p className={`text-sm leading-relaxed ${completed ? 'text-slate-600 line-through decoration-slate-400' : 'text-slate-800 font-medium'}`}>
           {goal.text}
@@ -205,7 +205,7 @@ export default function ParticipantPortal() {
   if (!portal) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-burnt-peach-200 border-t-burnt-peach-600 rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-accent-200 border-t-accent-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -230,7 +230,7 @@ export default function ParticipantPortal() {
             <h1 className="min-w-0 truncate text-xl font-black tracking-tight text-slate-900">CasePlanr</h1>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 rounded-full border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
-            <ShieldCheck className="w-3.5 h-3.5 text-burnt-peach-600" />
+            <ShieldCheck className="w-3.5 h-3.5 text-accent-600" />
             Secure Link
           </div>
         </div>
@@ -252,7 +252,7 @@ export default function ParticipantPortal() {
             <div className="space-y-1 pr-3 sm:pr-5">
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Current Phase</p>
               <div className="flex items-center gap-1.5">
-                <span className="text-xl font-black text-burnt-peach-600">{portal.currentPhase}</span>
+                <span className="text-xl font-black text-accent-600">{portal.currentPhase}</span>
                 <span className="text-slate-300 font-bold text-sm">/ {phaseCount}</span>
               </div>
             </div>
@@ -260,7 +260,7 @@ export default function ParticipantPortal() {
             <div className="space-y-1 px-3 sm:px-5">
               <p className="text-[10px] sm:text-[11px] font-semibold text-slate-400 uppercase tracking-wider">Progress</p>
               <div className="space-y-1">
-                <span className="text-xl font-black text-burnt-peach-600">{progressValue}%</span>
+                <span className="text-xl font-black text-accent-600">{progressValue}%</span>
                 <Progress value={progressValue} className="h-1.5 w-full max-w-[4rem] bg-slate-100" />
               </div>
             </div>
@@ -316,18 +316,18 @@ export default function ParticipantPortal() {
               const done = !!portal.milestones[key];
               const isCurrent = i + 1 === portal.currentPhase;
               return (
-                <div key={key} className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${done ? 'border-burnt-peach-100 bg-burnt-peach-50/70' : isCurrent ? 'border-burnt-peach-100 bg-burnt-peach-50' : 'border-slate-100 bg-slate-50'}`}>
+                <div key={key} className={`flex items-center gap-3 rounded-xl border p-3 transition-colors ${done ? 'border-accent-100 bg-accent-50/70' : isCurrent ? 'border-accent-100 bg-accent-50' : 'border-slate-100 bg-slate-50'}`}>
                   {done
-                    ? <CheckCircle2 className="w-5 h-5 text-burnt-peach-600 shrink-0" />
-                    : <Circle className={`w-5 h-5 shrink-0 ${isCurrent ? 'text-burnt-peach-500' : 'text-slate-300'}`} />
+                    ? <CheckCircle2 className="w-5 h-5 text-accent-600 shrink-0" />
+                    : <Circle className={`w-5 h-5 shrink-0 ${isCurrent ? 'text-accent-500' : 'text-slate-300'}`} />
                   }
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className={`text-sm font-semibold leading-snug ${done ? 'text-burnt-peach-700' : isCurrent ? 'text-burnt-peach-700' : 'text-slate-500'}`}>
+                      <span className={`text-sm font-semibold leading-snug ${done ? 'text-accent-700' : isCurrent ? 'text-accent-700' : 'text-slate-500'}`}>
                         Phase {i + 1}: {label}
                       </span>
                       {isCurrent && !done && (
-                        <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-burnt-peach-600 shadow-sm">Current</span>
+                        <span className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent-600 shadow-sm">Current</span>
                       )}
                     </div>
                   </div>

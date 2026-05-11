@@ -64,11 +64,11 @@ function SignatureBadge({
   removing: boolean;
 }) {
   return (
-    <div className="border border-burnt-peach-100 dark:border-burnt-peach-900 rounded-xl p-3 space-y-1.5 bg-burnt-peach-50/50 dark:bg-burnt-peach-950/20">
+    <div className="border border-accent-100 dark:border-accent-900 rounded-xl p-3 space-y-1.5 bg-accent-50/50 dark:bg-accent-950/20">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
-          <CheckCircle2 className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400 shrink-0" />
-          <span className="text-xs font-semibold text-burnt-peach-700 dark:text-burnt-peach-400 uppercase tracking-wider truncate">{label} — Signed</span>
+          <CheckCircle2 className="w-4 h-4 text-accent-600 dark:text-accent-400 shrink-0" />
+          <span className="text-xs font-semibold text-accent-700 dark:text-accent-400 uppercase tracking-wider truncate">{label} — Signed</span>
         </div>
         <Button
           type="button"
@@ -76,7 +76,7 @@ function SignatureBadge({
           variant="ghost"
           onClick={onRemove}
           disabled={removing}
-          className="h-7 px-2 shrink-0 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-100/70 dark:hover:bg-burnt-peach-950/40 text-xs font-semibold"
+          className="h-7 px-2 shrink-0 text-accent-600 dark:text-accent-400 hover:bg-accent-100/70 dark:hover:bg-accent-950/40 text-xs font-semibold"
           title={`Remove ${label.toLowerCase()} signature`}
         >
           {removing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -199,7 +199,7 @@ export default function ShareAndSign({
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <Link2 className="w-4 h-4 text-burnt-peach-500 shrink-0" />
+              <Link2 className="w-4 h-4 text-accent-500 shrink-0" />
               Share & Sign
             </CardTitle>
             <CardDescription className="text-xs text-slate-500 dark:text-slate-400">
@@ -212,7 +212,7 @@ export default function ShareAndSign({
               size="icon"
               variant="ghost"
               onClick={onClose}
-              className="h-8 w-8 shrink-0 rounded-full text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
+              className="h-8 w-8 shrink-0 rounded-full text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30"
               title="Close Share & Sign"
             >
               <X className="w-4 h-4" />
@@ -231,8 +231,8 @@ export default function ShareAndSign({
         {/* Share link section */}
         {!shareToken ? (
           <div className="flex flex-col sm:flex-row sm:items-center py-2 gap-3 text-center sm:text-left">
-            <div className="w-10 h-10 rounded-full bg-burnt-peach-50 dark:bg-burnt-peach-900/30 flex items-center justify-center shrink-0 mx-auto sm:mx-0">
-              <Link2 className="w-5 h-5 text-burnt-peach-500" />
+            <div className="w-10 h-10 rounded-full bg-accent-50 dark:bg-accent-900/30 flex items-center justify-center shrink-0 mx-auto sm:mx-0">
+              <Link2 className="w-5 h-5 text-accent-500" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">No participant link yet</p>
@@ -243,7 +243,7 @@ export default function ShareAndSign({
             <Button
               onClick={handleGenerateLink}
               disabled={generatingLink}
-              className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white font-bold"
+              className="bg-accent-600 dark:bg-accent-500 text-white font-bold"
             >
               {generatingLink ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Link2 className="w-4 h-4 mr-2" />}
               Generate Secure Link
@@ -262,7 +262,7 @@ export default function ShareAndSign({
                 className="shrink-0 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
                 title="Copy link"
               >
-                {copied ? <CheckCircle2 className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" /> : <Copy className="w-4 h-4" />}
+                {copied ? <CheckCircle2 className="w-4 h-4 text-accent-600 dark:text-accent-400" /> : <Copy className="w-4 h-4" />}
               </Button>
             </div>
 
@@ -291,7 +291,7 @@ export default function ShareAndSign({
                   size="sm"
                   variant="ghost"
                   onClick={() => setConfirmRevoke(true)}
-                  className="text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 text-xs font-semibold"
+                  className="text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30 text-xs font-semibold"
                 >
                   <Unlink className="w-3.5 h-3.5 mr-1.5" /> Revoke Link
                 </Button>
@@ -303,7 +303,7 @@ export default function ShareAndSign({
                     variant="outline"
                     onClick={handleRevokeLink}
                     disabled={revokingLink}
-                    className="text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-200 dark:border-burnt-peach-900 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 text-xs font-semibold h-7 px-2"
+                    className="text-accent-600 dark:text-accent-400 border-accent-200 dark:border-accent-900 hover:bg-accent-50 dark:hover:bg-accent-950/30 text-xs font-semibold h-7 px-2"
                   >
                     {revokingLink ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Yes, Revoke'}
                   </Button>
@@ -346,7 +346,7 @@ export default function ShareAndSign({
                     size="sm"
                     variant="outline"
                     onClick={() => setShowSignPad(v => !v)}
-                    className="w-full text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-200 dark:border-burnt-peach-900 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 font-semibold"
+                    className="w-full text-accent-600 dark:text-accent-400 border-accent-200 dark:border-accent-900 hover:bg-accent-50 dark:hover:bg-accent-950/30 font-semibold"
                   >
                     <PenLine className="w-4 h-4 mr-2" />
                     Sign as {userTitle || 'Case Manager'}

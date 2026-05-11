@@ -14,7 +14,7 @@ export default function TermsOfService() {
             By accessing or using CasePlanr, you agree to be bound by these Terms of Service. If you do not
             agree, do not use the application. CasePlanr is operated by <strong>Dustin Burton</strong>. Questions
             may be directed to{' '}
-            <a href="mailto:dustin.a.burton@gmail.com" className="text-burnt-peach-600 hover:underline font-medium">
+            <a href="mailto:dustin.a.burton@gmail.com" className="text-accent-600 hover:underline font-medium">
               dustin.a.burton@gmail.com
             </a>.
           </p>
@@ -114,7 +114,7 @@ export default function TermsOfService() {
         <Section title="Contact">
           <p>
             For questions about these Terms, contact:{' '}
-            <a href="mailto:dustin.a.burton@gmail.com" className="text-burnt-peach-600 hover:underline font-medium">
+            <a href="mailto:dustin.a.burton@gmail.com" className="text-accent-600 hover:underline font-medium">
               dustin.a.burton@gmail.com
             </a>
           </p>

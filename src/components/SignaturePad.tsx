@@ -214,7 +214,7 @@ export default function SignaturePad({ onSign, disabled, defaultName = '' }: Sig
       <Button
         onClick={handleSign}
         disabled={disabled || (mode === 'drawn' ? !hasDrawn : !typedName.trim())}
-        className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white font-bold w-full"
+        className="bg-accent-600 dark:bg-accent-500 text-white font-bold w-full"
       >
         Sign & Submit
       </Button>

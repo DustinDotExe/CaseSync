@@ -6,7 +6,7 @@ export default function CasePlanrLogo({ className, ...props }: SVGProps<SVGSVGEl
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 200 200"
-      className={cn('shrink-0 text-burnt-peach-600 dark:text-burnt-peach-500', className)}
+      className={cn('shrink-0 text-accent-600 dark:text-accent-500', className)}
       aria-hidden="true"
       {...props}
     >

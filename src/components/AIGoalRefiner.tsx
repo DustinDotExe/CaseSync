@@ -394,7 +394,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                     }, 50);
                   }
                 }}
-                className="shrink-0 text-burnt-peach-600 dark:text-burnt-peach-400 border-burnt-peach-200 dark:border-burnt-peach-800 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 gap-1.5"
+                className="shrink-0 text-accent-600 dark:text-accent-400 border-accent-200 dark:border-accent-800 hover:bg-accent-50 dark:hover:bg-accent-950/30 gap-1.5"
               >
                 <BookOpen className="w-3.5 h-3.5" />
                 Templates
@@ -404,8 +404,8 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
           </CardHeader>
           <CardContent className="space-y-4">
             {showTemplates && (
-              <div ref={templatesRef} className="rounded-xl border border-burnt-peach-100 dark:border-burnt-peach-900/50 bg-burnt-peach-50/50 dark:bg-burnt-peach-950/20 p-3 animate-in slide-in-from-top-2 duration-200">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-burnt-peach-600 dark:text-burnt-peach-400 mb-3">
+              <div ref={templatesRef} className="rounded-xl border border-accent-100 dark:border-accent-900/50 bg-accent-50/50 dark:bg-accent-950/20 p-3 animate-in slide-in-from-top-2 duration-200">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-accent-600 dark:text-accent-400 mb-3">
                   Select a template to pre-fill your notes
                 </p>
                 <div className="grid grid-cols-3 gap-1.5 mb-3">
@@ -415,8 +415,8 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                       onClick={() => setActiveDomain(cat.domain)}
                       className={`flex flex-col items-center gap-1 px-2 py-2.5 rounded-xl border text-center transition-all shadow-sm ${
                         currentDomain === cat.domain
-                          ? 'bg-burnt-peach-600 text-white border-burnt-peach-600 dark:bg-burnt-peach-500 dark:border-burnt-peach-500'
-                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-burnt-peach-300 dark:hover:border-burnt-peach-700 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400'
+                          ? 'bg-accent-600 text-white border-accent-600 dark:bg-accent-500 dark:border-accent-500'
+                          : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-accent-300 dark:hover:border-accent-700 hover:text-accent-600 dark:hover:text-accent-400'
                       }`}
                     >
                       <cat.Icon className="w-3.5 h-3.5 shrink-0" />
@@ -432,7 +432,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                         setRoughNotes(t.notes);
                         setShowTemplates(false);
                       }}
-                      className="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-burnt-peach-300 dark:hover:border-burnt-peach-700 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 transition-all leading-relaxed"
+                      className="w-full text-left px-3 py-2 rounded-lg text-xs text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 hover:border-accent-300 dark:hover:border-accent-700 hover:bg-accent-50 dark:hover:bg-accent-950/30 transition-all leading-relaxed"
                     >
                       <span className="font-bold text-slate-900 dark:text-slate-100 block mb-0.5">{t.label}</span>
                       {t.notes}
@@ -451,7 +451,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
               <Button
                 onClick={() => { if (roughNotes.trim()) setPendingGoalText(roughNotes.trim()); }}
                 disabled={loading || !roughNotes.trim()}
-                className="w-full bg-burnt-peach-600 dark:bg-burnt-peach-500 hover:bg-burnt-peach-700 dark:hover:bg-burnt-peach-600 text-white"
+                className="w-full bg-accent-600 dark:bg-accent-500 hover:bg-accent-700 dark:hover:bg-accent-600 text-white"
               >
                 <Plus className="w-4 h-4" />
                 Add to Case Plan
@@ -459,7 +459,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
               <Button 
                 onClick={handleRefine} 
                 disabled={loading || !roughNotes.trim()} 
-                className="w-full bg-burnt-peach-600 dark:bg-burnt-peach-500 hover:bg-burnt-peach-700 dark:hover:bg-burnt-peach-600 text-white"
+                className="w-full bg-accent-600 dark:bg-accent-500 hover:bg-accent-700 dark:hover:bg-accent-600 text-white"
               >
                 {loading ? (
                   <span className="flex items-center gap-2">
@@ -476,26 +476,26 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
             </div>
 
             {(loading || refinedGoal) && (
-              <div className="mt-6 p-4 bg-burnt-peach-50 dark:bg-burnt-peach-900/20 rounded-lg border border-burnt-peach-100 dark:border-burnt-peach-900/50 animate-in fade-in slide-in-from-top-2">
-                <h4 className="text-xs font-bold text-burnt-peach-600 dark:text-burnt-peach-400 uppercase mb-3">Refined SMART Goal</h4>
+              <div className="mt-6 p-4 bg-accent-50 dark:bg-accent-900/20 rounded-lg border border-accent-100 dark:border-accent-900/50 animate-in fade-in slide-in-from-top-2">
+                <h4 className="text-xs font-bold text-accent-600 dark:text-accent-400 uppercase mb-3">Refined SMART Goal</h4>
                 {loading && !refinedGoal ? (
                   <div className="space-y-2 animate-pulse py-1">
-                    <div className="h-2.5 bg-burnt-peach-200 dark:bg-burnt-peach-900/60 rounded-full w-full" />
-                    <div className="h-2.5 bg-burnt-peach-200 dark:bg-burnt-peach-900/60 rounded-full w-5/6" />
-                    <div className="h-2.5 bg-burnt-peach-200 dark:bg-burnt-peach-900/60 rounded-full w-4/6" />
-                    <div className="h-2.5 bg-burnt-peach-200 dark:bg-burnt-peach-900/60 rounded-full w-3/4" />
+                    <div className="h-2.5 bg-accent-200 dark:bg-accent-900/60 rounded-full w-full" />
+                    <div className="h-2.5 bg-accent-200 dark:bg-accent-900/60 rounded-full w-5/6" />
+                    <div className="h-2.5 bg-accent-200 dark:bg-accent-900/60 rounded-full w-4/6" />
+                    <div className="h-2.5 bg-accent-200 dark:bg-accent-900/60 rounded-full w-3/4" />
                   </div>
                 ) : (
                   <>
                     <Textarea
                       value={refinedGoal}
                       onChange={(e) => setRefinedGoal(e.target.value)}
-                      className="text-slate-700 dark:text-slate-300 italic bg-white dark:bg-slate-900 border-burnt-peach-100 dark:border-burnt-peach-900/50 focus-visible:ring-burnt-peach-500 min-h-[100px]"
+                      className="text-slate-700 dark:text-slate-300 italic bg-white dark:bg-slate-900 border-accent-100 dark:border-accent-900/50 focus-visible:ring-accent-500 min-h-[100px]"
                     />
                     <Button
                       size="sm"
                       onClick={handleAddGoal}
-                      className="mt-4 w-full bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white"
+                      className="mt-4 w-full bg-accent-600 dark:bg-accent-500 text-white"
                     >
                       <Plus className="w-4 h-4" />
                       Add to Case Plan
@@ -531,14 +531,14 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                             <div
                               ref={drag.innerRef}
                               {...drag.draggableProps}
-                              className={`p-4 bg-white dark:bg-slate-950 border rounded-lg shadow-sm flex flex-col gap-4 group transition-shadow ${snapshot.isDragging ? 'border-burnt-peach-300 dark:border-burnt-peach-700 shadow-lg' : 'border-slate-100 dark:border-slate-800'}`}
+                              className={`p-4 bg-white dark:bg-slate-950 border rounded-lg shadow-sm flex flex-col gap-4 group transition-shadow ${snapshot.isDragging ? 'border-accent-300 dark:border-accent-700 shadow-lg' : 'border-slate-100 dark:border-slate-800'}`}
                             >
                               {editingGoalId === goal.id ? (
                                 <div className="space-y-3">
                                   <Textarea
                                     value={editingGoalValue}
                                     onChange={(e) => setEditingGoalValue(e.target.value)}
-                                    className="min-h-[100px] text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-800 focus-visible:ring-burnt-peach-500"
+                                    className="min-h-[100px] text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 border-accent-200 dark:border-accent-800 focus-visible:ring-accent-500"
                                     autoFocus
                                   />
                                   <div className="space-y-1">
@@ -565,7 +565,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                                     <Button
                                       size="sm"
                                       onClick={() => handleUpdateGoal(goal.id)}
-                                      className="bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white"
+                                      className="bg-accent-600 dark:bg-accent-500 text-white"
                                     >
                                       <Check className="w-4 h-4" />
                                       Save Changes
@@ -607,7 +607,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
                                       variant="ghost"
                                       size="icon"
                                       onClick={() => startEditingGoal(goal)}
-                                      className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30"
+                                      className="h-8 w-8 text-slate-300 dark:text-slate-600 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30"
                                     >
                                       <Pencil className="w-4 h-4" />
                                     </Button>
@@ -666,7 +666,7 @@ export default function AIGoalRefiner({ participant, currentUser, goalTemplates 
             </Button>
             <Button
               onClick={commitAddGoal}
-              className="flex-1 bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-bold"
+              className="flex-1 bg-accent-600 hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-600 text-white font-bold"
             >
               <Plus className="w-4 h-4" />
               Add to Case Plan

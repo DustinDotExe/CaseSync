@@ -130,7 +130,7 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
         </div>
         <Button
           onClick={onAddParticipant}
-          className="bg-burnt-peach-600 hover:bg-burnt-peach-700 dark:bg-burnt-peach-500 dark:hover:bg-burnt-peach-600 text-white font-bold rounded-xl shadow-sm"
+          className="bg-accent-600 hover:bg-accent-700 dark:bg-accent-500 dark:hover:bg-accent-600 text-white font-bold rounded-xl shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New Case
@@ -145,7 +145,7 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
         </div>
         <div className="bg-white dark:bg-slate-900 p-3 md:p-4 space-y-0.5">
           <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Overdue</p>
-          <p className={cn('text-xl font-black', stats.totalOverdue > 0 ? 'text-red-600 dark:text-red-400' : 'text-slate-900 dark:text-white')}>
+          <p className={cn('text-xl font-black', stats.totalOverdue > 0 ? 'text-accent-700 dark:text-accent-300' : 'text-slate-900 dark:text-white')}>
             {stats.totalOverdue}
           </p>
           {stats.withOverdue > 0 && (
@@ -156,7 +156,7 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
         </div>
         <div className="bg-white dark:bg-slate-900 p-3 md:p-4 space-y-0.5">
           <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">Due This Week</p>
-          <p className={cn('text-xl font-black', stats.totalDueSoon > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-slate-900 dark:text-white')}>
+          <p className={cn('text-xl font-black', stats.totalDueSoon > 0 ? 'text-accent-600 dark:text-accent-400' : 'text-slate-900 dark:text-white')}>
             {stats.totalDueSoon}
           </p>
         </div>
@@ -177,7 +177,7 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
             placeholder="Search by name or case number…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="pl-10 pr-8 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-burnt-peach-500 h-10 rounded-xl"
+            className="pl-10 pr-8 bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 focus-visible:ring-accent-500 h-10 rounded-xl"
           />
           {search && (
             <button
@@ -232,14 +232,14 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
               >
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <div className="min-w-0">
-                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 leading-tight group-hover:text-burnt-peach-600 dark:group-hover:text-burnt-peach-400 transition-colors truncate">
+                    <p className="font-bold text-sm text-slate-800 dark:text-slate-200 leading-tight group-hover:text-accent-600 dark:group-hover:text-accent-400 transition-colors truncate">
                       {p.name}
                     </p>
                     {p.caseNumber && (
                       <p className="text-[10px] font-mono tracking-tight text-slate-400 dark:text-slate-500 mt-0.5">{p.caseNumber}</p>
                     )}
                   </div>
-                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 group-hover:text-burnt-peach-400 transition-colors shrink-0 mt-0.5" />
+                  <ArrowRight className="w-3.5 h-3.5 text-slate-300 dark:text-slate-700 group-hover:text-accent-400 transition-colors shrink-0 mt-0.5" />
                 </div>
 
                 <div className="mb-3">
@@ -247,20 +247,20 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
                     <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 truncate min-w-0">
                       {phaseName(p.currentPhase, milestonePhases)}
                     </span>
-                    <span className="text-[11px] font-black text-burnt-peach-600 dark:text-burnt-peach-400 shrink-0">{pct}%</span>
+                    <span className="text-[11px] font-black text-accent-600 dark:text-accent-400 shrink-0">{pct}%</span>
                   </div>
                   <Progress value={pct} className="h-1 bg-slate-100 dark:bg-slate-800" />
                 </div>
 
                 <div className="flex flex-wrap gap-1">
                   {od.length > 0 && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent-100/80 dark:bg-accent-950/50 text-accent-700 dark:text-accent-300 text-[10px] font-bold">
                       <AlertTriangle className="w-2.5 h-2.5" />
                       {od.length} overdue
                     </span>
                   )}
                   {ds.length > 0 && (
-                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 text-[10px] font-bold">
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-md bg-accent-50 dark:bg-accent-950/30 text-accent-600 dark:text-accent-400 text-[10px] font-bold">
                       <Clock className="w-2.5 h-2.5" />
                       {ds.length} due soon
                     </span>
@@ -303,7 +303,7 @@ export default function CaseloadDashboard({ participants, milestonePhases, onSel
           <p className="text-slate-400 dark:text-slate-500 text-sm font-medium">No participants match your filters.</p>
           <button
             onClick={() => { setSearch(''); setFilter('all'); }}
-            className="mt-2 text-xs font-semibold text-burnt-peach-600 dark:text-burnt-peach-400 hover:underline"
+            className="mt-2 text-xs font-semibold text-accent-600 dark:text-accent-400 hover:underline"
           >
             Clear filters
           </button>

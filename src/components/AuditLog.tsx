@@ -117,7 +117,7 @@ function getActionColors(action: string) {
   switch (action) {
     case 'created': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400';
     case 'deleted': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400';
-    default:        return 'bg-burnt-peach-100 dark:bg-burnt-peach-900/30 text-burnt-peach-700 dark:text-burnt-peach-400';
+    default:        return 'bg-accent-100 dark:bg-accent-900/30 text-accent-700 dark:text-accent-400';
   }
 }
 
@@ -295,7 +295,7 @@ export default function AuditLog({ participant }: { participant: Participant }) 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="w-8 h-8 text-burnt-peach-400 animate-spin" />
+        <Loader2 className="w-8 h-8 text-accent-400 animate-spin" />
       </div>
     );
   }
@@ -343,16 +343,16 @@ export default function AuditLog({ participant }: { participant: Participant }) 
 
         {/* Activity Log label */}
         <div className="flex items-center gap-2">
-          <History className="w-4 h-4 text-burnt-peach-600 dark:text-burnt-peach-400" />
+          <History className="w-4 h-4 text-accent-600 dark:text-accent-400" />
           <span className="text-sm font-bold text-slate-700 dark:text-slate-300">History</span>
           <span className="text-xs font-normal text-slate-400 dark:text-slate-500">
             — {visible.length} {visible.length === 1 ? 'entry' : 'entries'}
           </span>
         </div>
         {briefVisible && (
-          <div className="rounded-lg border border-burnt-peach-200 dark:border-burnt-peach-800/60 bg-burnt-peach-50 dark:bg-burnt-peach-950/20 p-4 space-y-2">
+          <div className="rounded-lg border border-accent-200 dark:border-accent-800/60 bg-accent-50 dark:bg-accent-950/20 p-4 space-y-2">
             <div className="flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-burnt-peach-700 dark:text-burnt-peach-400 uppercase tracking-wider">
+              <div className="flex items-center gap-1.5 text-[11px] font-semibold text-accent-700 dark:text-accent-400 uppercase tracking-wider">
                 Narrative Summary
               </div>
               <div className="no-print flex items-center gap-1">
@@ -361,14 +361,14 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                     <button
                       onClick={() => setBriefEditing(e => !e)}
                       title={briefEditing ? 'Done editing' : 'Edit'}
-                      className="p-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors"
+                      className="p-1 rounded text-accent-400 hover:text-accent-600 dark:hover:text-accent-300 hover:bg-accent-100 dark:hover:bg-accent-900/30 transition-colors"
                     >
                       {briefEditing ? <Check className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
                     </button>
                     <button
                       onClick={sendToObservations}
                       title="Send to Case Manager Observations"
-                      className="no-print flex items-center gap-1 px-2 py-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors text-[10px] font-semibold uppercase tracking-wide"
+                      className="no-print flex items-center gap-1 px-2 py-1 rounded text-accent-400 hover:text-accent-600 dark:hover:text-accent-300 hover:bg-accent-100 dark:hover:bg-accent-900/30 transition-colors text-[10px] font-semibold uppercase tracking-wide"
                     >
                       {sentToObs ? (
                         <><Check className="w-3.5 h-3.5" /><span>Sent</span></>
@@ -382,14 +382,14 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                   onClick={generateBrief}
                   disabled={briefStreaming}
                   title="Regenerate"
-                  className="p-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors disabled:opacity-40"
+                  className="p-1 rounded text-accent-400 hover:text-accent-600 dark:hover:text-accent-300 hover:bg-accent-100 dark:hover:bg-accent-900/30 transition-colors disabled:opacity-40"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                 </button>
                 <button
                   onClick={() => setBriefVisible(false)}
                   title="Dismiss"
-                  className="p-1 rounded text-burnt-peach-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-300 hover:bg-burnt-peach-100 dark:hover:bg-burnt-peach-900/30 transition-colors"
+                  className="p-1 rounded text-accent-400 hover:text-accent-600 dark:hover:text-accent-300 hover:bg-accent-100 dark:hover:bg-accent-900/30 transition-colors"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>
@@ -401,13 +401,13 @@ export default function AuditLog({ participant }: { participant: Participant }) 
               <Textarea
                 value={briefText}
                 onChange={e => setBriefText(e.target.value)}
-                className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 min-h-[100px] bg-white dark:bg-slate-900 border-burnt-peach-200 dark:border-burnt-peach-700 resize-none"
+                className="text-sm leading-relaxed text-slate-700 dark:text-slate-300 min-h-[100px] bg-white dark:bg-slate-900 border-accent-200 dark:border-accent-700 resize-none"
                 autoFocus
               />
             ) : (
               <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">
                 {briefText}
-                {briefStreaming && <span className="inline-block w-1.5 h-4 ml-0.5 bg-burnt-peach-400 animate-pulse rounded-sm align-middle" />}
+                {briefStreaming && <span className="inline-block w-1.5 h-4 ml-0.5 bg-accent-400 animate-pulse rounded-sm align-middle" />}
               </p>
             )}
           </div>
@@ -420,8 +420,8 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                 onClick={() => setActiveFilter(f.key)}
                 className={`text-[11px] font-bold px-3 py-1 rounded-full border transition-colors ${
                   activeFilter === f.key
-                    ? 'bg-burnt-peach-600 dark:bg-burnt-peach-500 text-white border-burnt-peach-600 dark:border-burnt-peach-500'
-                    : 'bg-transparent text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-burnt-peach-300 dark:hover:border-burnt-peach-700 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400'
+                    ? 'bg-accent-600 dark:bg-accent-500 text-white border-accent-600 dark:border-accent-500'
+                    : 'bg-transparent text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-accent-300 dark:hover:border-accent-700 hover:text-accent-600 dark:hover:text-accent-400'
                 }`}
               >
                 {f.label}
@@ -434,7 +434,7 @@ export default function AuditLog({ participant }: { participant: Participant }) 
               variant="outline"
               onClick={generateBrief}
               disabled={briefStreaming || loading}
-              className="no-print shrink-0 h-7 text-xs font-semibold gap-1.5 px-2 border-burnt-peach-400 dark:border-burnt-peach-500 text-burnt-peach-600 dark:text-burnt-peach-400 hover:bg-burnt-peach-50 dark:hover:bg-burnt-peach-950/30 hover:text-burnt-peach-700 dark:hover:text-burnt-peach-300"
+              className="no-print shrink-0 h-7 text-xs font-semibold gap-1.5 px-2 border-accent-400 dark:border-accent-500 text-accent-600 dark:text-accent-400 hover:bg-accent-50 dark:hover:bg-accent-950/30 hover:text-accent-700 dark:hover:text-accent-300"
             >
               {briefStreaming ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wand2 className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">Generate Summary</span>
@@ -472,7 +472,7 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                         value={editDescription}
                         onChange={e => setEditDescription(e.target.value)}
                         placeholder="Description"
-                        className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500"
                         autoFocus
                       />
                       {entry.details?.newValue !== undefined && (
@@ -480,14 +480,14 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                           value={editNewValue}
                           onChange={e => setEditNewValue(e.target.value)}
                           placeholder="Value"
-                          className="text-xs min-h-[64px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500 resize-none"
+                          className="text-xs min-h-[64px] bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500 resize-none"
                         />
                       )}
                       <Input
                         type="date"
                         value={editDate}
                         onChange={e => setEditDate(e.target.value)}
-                        className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-burnt-peach-500"
+                        className="h-8 text-xs bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 focus-visible:ring-accent-500"
                       />
                       <div className="flex gap-2 justify-end">
                         <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 text-xs text-slate-500">
@@ -497,7 +497,7 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                           size="sm"
                           onClick={() => saveEdit(entry)}
                           disabled={saving || !editDescription.trim()}
-                          className="h-7 text-xs bg-burnt-peach-600 hover:bg-burnt-peach-700 text-white"
+                          className="h-7 text-xs bg-accent-600 hover:bg-accent-700 text-white"
                         >
                           {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />} Save
                         </Button>
@@ -572,7 +572,7 @@ export default function AuditLog({ participant }: { participant: Participant }) 
                             <button
                               onClick={() => startEdit(entry)}
                               title="Edit entry"
-                              className="p-1 rounded text-slate-400 hover:text-burnt-peach-600 dark:hover:text-burnt-peach-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                              className="p-1 rounded text-slate-400 hover:text-accent-600 dark:hover:text-accent-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                             >
                               <Pencil className="w-3.5 h-3.5" />
                             </button>
